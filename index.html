@@ -5108,10 +5108,18 @@ Quand tu as assez d'infos, génère le programme en terminant avec un bloc entre
   "keywords": ["objectif1"],
   "structure": "repeat",
   "days": [
-    {"l":"Lun","n":"Nom séance","t":"muscle","dur":"45 min","rest":75,"foc":"focus","exos":[{"n":"Exercice","s":"3×10","m":"muscles"}]},
-    {"l":"Mar","n":"Repos","t":"rest","dur":"—","rest":0,"foc":"","exos":[]}
+    {"l":"Lun","n":"Nom séance","t":"muscle","dur":"45 min","rest":75,"foc":"focus",
+     "exos":[{"n":"Exercice principal","s":"3×10","m":"muscles"}],
+     "card":"Échauffement : 5 min cardio léger + mobilité",
+     "tip":"Retour au calme : étirements 5 min"},
+    {"l":"Mar","n":"Repos","t":"rest","dur":"—","rest":0,"foc":"","exos":[],"card":null,"tip":""}
   ]
 }
+
+IMPORTANT : Ne mets JAMAIS l'échauffement ni le retour au calme dans le tableau "exos". Utilise :
+- "card" pour décrire l'échauffement (affiché dans la section Échauffement)
+- "tip" pour décrire le retour au calme (affiché dans la section Récupération)
+- "exos" uniquement pour les exercices principaux d'entraînement
 
 RÈGLES DU PROGRAMME :
 - Adapte la fréquence au niveau (débutant: 2-3j, intermédiaire: 3-4j, avancé: 4-5j)
@@ -5226,14 +5234,36 @@ function _coachShowProgActions(prog) {
 }
 
 function _coachSaveProg(prog, activate) {
+  // Mots-clés pour détecter échauffement et retour au calme
+  const isWarmup = n => /échauff|warm.?up|activation|mobilisation/i.test(n);
+  const isCooldown = n => /retour.au.calme|cool.?down|étirement|stretching|récup/i.test(n);
+
   // Construire le programme au format interne
-  const days = (prog.days || []).map(d => ({
-    l: d.l || 'Lun', n: d.n || 'Repos', b: (d.n||'Off').slice(0,8),
-    t: d.t || 'rest', dur: d.dur || '45 min', rest: d.rest || 60,
-    foc: d.foc || '', img: '',
-    exos: (d.exos || []).map(e => ({ n: e.n, s: e.s || '3×10', m: e.m || '' })),
-    card: null, tip: ''
-  }));
+  const days = (prog.days || []).map(d => {
+    const allExos = d.exos || [];
+
+    // Séparer les exos en 3 groupes
+    const warmupExos   = allExos.filter(e => isWarmup(e.n));
+    const cooldownExos = allExos.filter(e => isCooldown(e.n));
+    const mainExos     = allExos.filter(e => !isWarmup(e.n) && !isCooldown(e.n));
+
+    // Construire le texte card (échauffement) et tip (retour au calme)
+    const cardText = warmupExos.length
+      ? warmupExos.map(e => e.n + (e.s ? ' · ' + e.s : '')).join(', ')
+      : (d.card || null);
+    const tipText = cooldownExos.length
+      ? cooldownExos.map(e => e.n + (e.s ? ' · ' + e.s : '')).join(', ')
+      : (d.tip || '');
+
+    return {
+      l: d.l || 'Lun', n: d.n || 'Repos', b: (d.n||'Off').slice(0,8),
+      t: d.t || 'rest', dur: d.dur || '45 min', rest: d.rest || 60,
+      foc: d.foc || '', img: '',
+      exos: mainExos.map(e => ({ n: e.n, s: e.s || '3×10', m: e.m || '' })),
+      card: cardText,
+      tip: tipText
+    };
+  });
 
   // S'assurer d'avoir 7 jours
   const labels = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
