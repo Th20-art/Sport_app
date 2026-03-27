@@ -4983,255 +4983,655 @@ function _pbSaveOnly() {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// PROG COACH IA — chat guidé pour créer un programme complet
+// PROG COACH IA — flow en étapes graphiques
 // ══════════════════════════════════════════════════════════════════════
-let COACH = null; // état du coach
+let COACH = null;
 
-function openProgCoach() {
-  const sel = document.getElementById('prog-selector-sheet');
-  if (sel) sel.remove();
+// Définition des étapes du flow
+const COACH_STEPS = [
+  {
+    id: 'physique',
+    icon: '✨',
+    question: 'Ton modèle physique ?',
+    sub: 'Pour calibrer la direction — pas une obligation, juste une inspiration',
+    type: 'model',
+    models: [
+      { label: 'Tom Holland', sub: 'Athlétique, fonctionnel, lean', value: 'Tom Holland (Spider-Man) : corps athlétique et fonctionnel, lean sans être massif, mobilité élevée, endurance', icon: '🕷️', color: '#E8192C' },
+      { label: 'Thor / Chris H.', sub: 'Masse musculaire, force, puissance', value: 'Thor (Chris Hemsworth) : masse musculaire importante, force brute, épaules larges, physique imposant', icon: '⚡', color: '#4A90E2' },
+      { label: 'Goku', sub: 'Performance extrême, explosivité', value: 'Goku : performance athlétique extrême, explosivité, endurance surhumaine, corps très sec et musclé', icon: '🔆', color: '#FFD700' },
+      { label: 'Gojo Satoru', sub: 'Sec, élancé, esthétique', value: 'Gojo (Jujutsu Kaisen) : corps sec et esthétique, musculature visible sans excès, style élancé et défini', icon: '🌀', color: '#8B5CF6' },
+      { label: 'Physique athlète', sub: 'Corps de sportif pro, équilibré', value: 'Athlète professionnel : physique équilibré et fonctionnel, performance et esthétique', icon: '🏆', color: '#1D9E75' },
+      { label: 'Sans préférence', sub: 'Je veux juste progresser', value: 'sans modèle particulier', icon: '🎯', color: '#888' },
+    ]
+  },
+  {
+    id: 'level',
+    icon: '🏃',
+    question: 'Où en es-tu physiquement ?',
+    sub: 'Pas de jugement — choisis ce qui te correspond le mieux',
+    type: 'choice',
+    choices: [
+      { label: 'Débutant', sub: 'Je commence ou je reprends', value: 'débutant', icon: '🌱' },
+      { label: 'Intermédiaire', sub: 'Je m\'entraîne depuis quelques mois', value: 'intermédiaire', icon: '⚡' },
+      { label: 'Avancé', sub: 'Je m\'entraîne régulièrement depuis + d\'1 an', value: 'avancé', icon: '🔥' },
+    ]
+  },
+  {
+    id: 'goal',
+    icon: '🎯',
+    question: 'Ton objectif principal ?',
+    sub: 'Ce que tu veux vraiment obtenir',
+    type: 'choice',
+    choices: [
+      { label: 'Prendre du muscle', sub: 'Prise de masse, volume', value: 'prise de masse', icon: '💪' },
+      { label: 'Perdre du poids', sub: 'Brûler des graisses', value: 'perte de poids', icon: '🔥' },
+      { label: 'Être plus fort', sub: 'Force maximale', value: 'force', icon: '🏋️' },
+      { label: 'Me sentir mieux', sub: 'Cardio, endurance, mobilité', value: 'endurance', icon: '🧘' },
+    ]
+  },
+  {
+    id: 'days',
+    icon: '📅',
+    question: 'Combien de jours par semaine ?',
+    sub: 'Sois réaliste — la régularité > l\'intensité',
+    type: 'choice',
+    choices: [
+      { label: '2 jours', sub: 'Minimum, idéal pour débutant', value: '2', icon: '😌' },
+      { label: '3 jours', sub: 'Le sweet spot', value: '3', icon: '✅' },
+      { label: '4 jours', sub: 'Bon volume hebdo', value: '4', icon: '💪' },
+      { label: '5 jours', sub: 'Entraînement intensif', value: '5', icon: '🔥' },
+    ]
+  },
+  {
+    id: 'duration',
+    icon: '⏱️',
+    question: 'Combien de temps par séance ?',
+    sub: 'Durée que tu peux tenir chaque semaine',
+    type: 'choice',
+    choices: [
+      { label: '30 min', sub: 'Court et efficace', value: '30', icon: '⚡' },
+      { label: '45 min', sub: 'Le bon équilibre', value: '45', icon: '✅' },
+      { label: '1 heure', sub: 'Séance complète', value: '60', icon: '💪' },
+      { label: '1h30+', sub: 'Pour les passionnés', value: '90', icon: '🏆' },
+    ]
+  },
+  {
+    id: 'equipment',
+    icon: '🏋️',
+    question: 'Tu t\'entraînes où ?',
+    sub: 'Pour adapter les exercices au matériel disponible',
+    type: 'equipment',
+    choices: [
+      { label: 'Salle complète', sub: 'Tout le matériel (câbles, machines, barres)', value: 'salle complète', icon: '🏢', detail: true },
+      { label: 'Basic Fit / low-cost', sub: 'Haltères, barres, quelques machines', value: 'salle low-cost type Basic Fit (haltères, barres, quelques machines, pas forcément tous les câbles)', icon: '💳', detail: false },
+      { label: 'Fitness parc / outdoor', sub: 'Barres de traction, anneaux, poids du corps', value: 'fitness parc outdoor (barres de traction, anneaux, dips, poids du corps)', icon: '🌳', detail: false },
+      { label: 'À la maison', sub: 'Poids du corps, peu de matériel', value: 'maison (poids du corps uniquement)', icon: '🏠', detail: false },
+      { label: 'Haltères + barre', sub: 'Home gym avec barbell et dumbbells', value: 'home gym avec haltères et barre', icon: '🏋️', detail: false },
+    ]
+  },
+  {
+    id: 'constraint',
+    icon: '⚠️',
+    question: 'Des zones à protéger ?',
+    sub: 'Blessures, douleurs, problèmes posturaux...',
+    type: 'constraint',
+    choices: [
+      { label: 'Aucune', sub: 'Je peux tout faire', value: '', icon: '✅' },
+      { label: 'Dos / lombaires', sub: 'Éviter flexion avec charge', value: 'dos et lombaires', icon: '🔴' },
+      { label: 'Épaules / poignets', sub: 'Adapter les poussées', value: 'épaules et poignets', icon: '🔴' },
+      { label: 'Genoux / hanches', sub: 'Adapter les jambes', value: 'genoux et hanches', icon: '🔴' },
+    ]
+  },
+];
 
-  COACH = { messages: [], context: {}, done: false };
+// Helper: fallback icon quand image absente
+function makeIconFallback(icon) {
+  const d = document.createElement('div');
+  d.style.cssText = 'font-size:32px;display:flex;align-items:center;justify-content:center;width:100%;height:100%';
+  d.textContent = icon;
+  return d;
+}
 
-  const overlay = document.createElement('div');
-  overlay.id = 'prog-coach';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:2500;background:var(--black);display:flex;flex-direction:column;overflow:hidden';
-  document.body.appendChild(overlay);
+function _coachRenderStep(overlay) {
+  overlay.innerHTML = '';
+  const step = COACH_STEPS[COACH.stepIdx];
+  const total = COACH_STEPS.length;
+  const pct = Math.round((COACH.stepIdx / total) * 100);
 
-  // Header
-  const header = _pbEl('div', { style:'padding:calc(var(--st)+14px) 20px 14px;background:var(--black2);border-bottom:1px solid var(--g1);display:flex;align-items:center;gap:12px;flex-shrink:0' });
-  const closeBtn = _pbEl('button', { style:'width:36px;height:36px;border-radius:50%;background:var(--g1);border:none;color:var(--w);font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center' }, '✕');
+  // ── Header
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:calc(var(--st)+14px) 20px 14px;background:var(--black2);border-bottom:1px solid var(--g1);display:flex;align-items:center;gap:12px;flex-shrink:0';
+  const closeBtn = document.createElement('button');
+  closeBtn.style.cssText = 'width:36px;height:36px;border-radius:50%;background:var(--g1);border:none;color:var(--w);font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center';
+  closeBtn.textContent = '✕';
   closeBtn.onclick = () => { overlay.remove(); COACH = null; };
-  const titleWrap = _pbEl('div', { style:'flex:1' });
-  titleWrap.appendChild(_pbEl('div', { style:'font-family:Barlow Condensed,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent)' }, '✦ COACH IA'));
-  titleWrap.appendChild(_pbEl('div', { style:'font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--w);line-height:1' }, 'Créer mon programme'));
-  header.appendChild(closeBtn);
-  header.appendChild(titleWrap);
+  const titleCol = document.createElement('div');
+  titleCol.style.flex = '1';
+  const stepLabel = document.createElement('div');
+  stepLabel.style.cssText = 'font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:4px';
+  stepLabel.textContent = '✦ COACH IA · étape ' + (COACH.stepIdx + 1) + ' / ' + total;
+  const barWrap = document.createElement('div');
+  barWrap.style.cssText = 'height:3px;background:var(--g1);border-radius:2px;overflow:hidden';
+  const barFill = document.createElement('div');
+  barFill.style.cssText = 'height:100%;background:var(--accent);border-radius:2px;transition:width 0.4s ease;width:' + pct + '%';
+  barWrap.appendChild(barFill);
+  titleCol.appendChild(stepLabel); titleCol.appendChild(barWrap);
+  header.appendChild(closeBtn); header.appendChild(titleCol);
   overlay.appendChild(header);
 
-  // Zone de chat
-  const chat = _pbEl('div', { id:'coach-chat', style:'flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px' });
-  overlay.appendChild(chat);
+  // ── Corps
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:24px 20px calc(24px + var(--sb))';
 
-  // Zone de saisie
-  const inputZone = _pbEl('div', { style:'padding:12px 16px calc(12px + var(--sb));background:var(--black2);border-top:1px solid var(--g1);display:flex;gap:8px;flex-shrink:0' });
-  const inp = _pbEl('input', { id:'coach-inp', type:'text', placeholder:'Réponds au coach...', style:'flex:1;background:var(--black3);border:1px solid var(--g1);border-radius:20px;color:var(--w);font-family:Barlow,sans-serif;font-size:14px;padding:10px 16px;outline:none' });
-  const sendBtn = _pbEl('button', { style:'width:40px;height:40px;border-radius:50%;background:var(--accent);border:none;color:#fff;font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px var(--theme-glow)' }, '→');
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') _coachSend(); });
-  sendBtn.onclick = _coachSend;
-  inputZone.appendChild(inp); inputZone.appendChild(sendBtn);
-  overlay.appendChild(inputZone);
+  const iconEl = document.createElement('div');
+  iconEl.style.cssText = 'font-size:44px;text-align:center;margin-bottom:12px;animation:popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275)';
+  iconEl.textContent = step.icon;
+  body.appendChild(iconEl);
 
-  // Message d'accueil du coach — ajouté à l'historique ET affiché
-  const welcomeText = "Salut ! Je suis ton coach perso. Je vais t'aider à construire un programme sur mesure.\n\nPas besoin de savoir quoi que ce soit — je vais te guider étape par étape.\n\nPremière question : **comment tu te sens physiquement en ce moment ?** Débutant, tu reviens après une pause, tu t'entraînes déjà régulièrement... dis-moi juste en tes mots.";
-  COACH.messages.push({ role: 'assistant', content: welcomeText });
-  _coachAddMsg('coach', welcomeText);
-}
+  const qEl = document.createElement('div');
+  qEl.style.cssText = 'font-family:Bebas Neue,sans-serif;font-size:30px;color:var(--w);text-align:center;line-height:1.1;margin-bottom:6px';
+  qEl.textContent = step.question;
+  body.appendChild(qEl);
 
-function _coachAddMsg(role, text, isLoading) {
-  const chat = document.getElementById('coach-chat');
-  if (!chat) return;
+  const subEl = document.createElement('div');
+  subEl.style.cssText = 'font-size:12px;color:var(--wm);text-align:center;margin-bottom:22px;line-height:1.5';
+  subEl.textContent = step.sub;
+  body.appendChild(subEl);
 
-  const isCoach = role === 'coach';
-  const wrap = _pbEl('div', { style:'display:flex;gap:10px;align-items:flex-end;'+(isCoach?'':'flex-direction:row-reverse') });
+  const _next = () => {
+    if (COACH.stepIdx < COACH_STEPS.length - 1) {
+      COACH.stepIdx++;
+      _coachRenderStep(overlay);
+    } else {
+      _coachGenerate(overlay);
+    }
+  };
 
-  // Avatar
-  const avatar = _pbEl('div', { style:'width:32px;height:32px;border-radius:50%;background:'+(isCoach?'var(--accent)':'var(--g1)')+';display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0' }, isCoach ? '✦' : '👤');
+  // ════════════════════════════════════════
+  // TYPE : inspiration — grille cards visuelles
+  // ════════════════════════════════════════
+  if (step.type === 'inspiration') {
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px';
 
-  // Bulle
-  const bubble = _pbEl('div', { style:'max-width:78%;padding:10px 14px;border-radius:'+(isCoach?'4px 16px 16px 4px':'16px 4px 4px 16px')+';background:'+(isCoach?'rgba(232,25,44,0.08)':'var(--black3)')+';border:1px solid '+(isCoach?'rgba(232,25,44,0.2)':'var(--g1)') });
+    step.choices.forEach(choice => {
+      const isSelected = COACH.answers[step.id] === choice.value || (choice.value === 'custom' && COACH.answers[step.id]?.startsWith('custom'));
+      const card = document.createElement('div');
+      card.style.cssText = 'border-radius:10px;overflow:hidden;border:2px solid ' + (isSelected ? 'var(--accent)' : 'var(--g1)') + ';cursor:pointer;background:var(--black3);transition:border-color 0.15s;position:relative';
 
-  if (isLoading) {
-    bubble.id = 'coach-loading';
-    bubble.innerHTML = '<span style="color:var(--wm);font-size:20px;letter-spacing:4px;animation:loadDots 1s infinite">···</span>';
-  } else {
-    // Formatage simple : **gras** et sauts de ligne
-    const formatted = text
-      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--w)">$1</strong>')
-      .replace(/\n/g, '<br>');
-    bubble.innerHTML = '<span style="font-size:13px;color:var(--wd);line-height:1.6">' + formatted + '</span>';
+      const imgH = document.createElement('div');
+      imgH.style.cssText = 'height:90px;background:linear-gradient(135deg,#111,#1a1a1a);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative';
+      if (choice.img) {
+        const img = document.createElement('img');
+        img.src = choice.img;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:top center;filter:brightness(0.6)';
+        img.onerror = () => { img.remove(); imgH.appendChild(makeIconFallback(choice.icon)); };
+        imgH.appendChild(img);
+      } else {
+        imgH.appendChild(makeIconFallback(choice.icon));
+      }
+      if (isSelected) {
+        const badge = document.createElement('div');
+        badge.style.cssText = 'position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px';
+        badge.textContent = '✓';
+        imgH.appendChild(badge);
+      }
+      card.appendChild(imgH);
+
+      const info = document.createElement('div');
+      info.style.cssText = 'padding:8px 10px';
+      info.innerHTML = '<div style="font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;color:' + (isSelected ? 'var(--accent)' : 'var(--w)') + '">' + choice.label + '</div><div style="font-size:10px;color:var(--wm);margin-top:1px">' + choice.sub + '</div>';
+      card.appendChild(info);
+
+      card.addEventListener('click', () => {
+        if (choice.value === 'custom') {
+          COACH.answers[step.id] = 'custom';
+          // Input texte inline
+          grid.remove();
+          const cw = document.createElement('div');
+          cw.style.cssText = 'display:flex;flex-direction:column;gap:12px';
+          cw.innerHTML = '<div style="font-size:13px;color:var(--wm);text-align:center">Décris le physique que tu vises en quelques mots</div>';
+          const inp2 = document.createElement('input');
+          inp2.type = 'text';
+          inp2.placeholder = 'ex: athlétique et sec, powerlifter, martial...';
+          inp2.style.cssText = 'width:100%;background:var(--black2);border:2px solid var(--accent);border-radius:8px;color:var(--w);font-size:15px;padding:14px 16px;outline:none;box-sizing:border-box';
+          const nextBtn2 = document.createElement('button');
+          nextBtn2.style.cssText = 'width:100%;font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer';
+          nextBtn2.textContent = 'Continuer →';
+          nextBtn2.onclick = () => {
+            COACH.answers[step.id] = inp2.value.trim() || 'physique personnalisé';
+            _next();
+          };
+          inp2.addEventListener('keydown', e => { if (e.key === 'Enter') nextBtn2.click(); });
+          cw.appendChild(inp2); cw.appendChild(nextBtn2);
+          body.appendChild(cw);
+          setTimeout(() => inp2.focus(), 50);
+          return;
+        }
+        COACH.answers[step.id] = choice.value;
+        card.style.borderColor = 'var(--accent)';
+        setTimeout(_next, 220);
+      });
+      grid.appendChild(card);
+    });
+    body.appendChild(grid);
   }
 
-  if (isCoach) { wrap.appendChild(avatar); wrap.appendChild(bubble); }
-  else { wrap.appendChild(bubble); wrap.appendChild(avatar); }
+  // ════════════════════════════════════════
+  // TYPE : equipment — choix + sous-précision pour salle
+  // ════════════════════════════════════════
+  else if (step.type === 'equipment') {
+    const selType = COACH.answers['_equipType'];
+    const selectedChoice = step.choices.find(ch => selType && ch.value === selType);
 
-  chat.appendChild(wrap);
-  requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; });
-  return bubble;
+    if (selType && selectedChoice?.precisions) {
+      // Sous-étape : précision du type de salle
+      const backRow = document.createElement('div');
+      backRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;padding:6px 0';
+      backRow.innerHTML = '<span style="color:var(--accent);font-size:18px">←</span><span style="font-family:Barlow Condensed,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--wm)">Choisir autre lieu</span>';
+      backRow.onclick = () => { delete COACH.answers['_equipType']; _coachRenderStep(overlay); };
+      body.appendChild(backRow);
+
+      const precTitle = document.createElement('div');
+      precTitle.style.cssText = 'font-family:Barlow Condensed,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:10px';
+      precTitle.textContent = 'Quel type de salle ?';
+      body.appendChild(precTitle);
+
+      const col2 = document.createElement('div');
+      col2.style.cssText = 'display:flex;flex-direction:column;gap:8px';
+      selectedChoice.precisions.forEach(prec => {
+        const isSel = COACH.answers['equipment'] === prec.value;
+        const btn = document.createElement('button');
+        btn.style.cssText = 'width:100%;display:flex;align-items:center;gap:12px;padding:14px;border-radius:8px;border:2px solid ' + (isSel ? 'var(--accent)' : 'var(--g1)') + ';background:' + (isSel ? 'rgba(232,25,44,0.08)' : 'var(--black3)') + ';cursor:pointer;text-align:left;transition:all 0.15s';
+        btn.innerHTML = '<div style="width:38px;height:38px;border-radius:6px;background:var(--black2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">' + prec.icon + '</div><div style="flex:1"><div style="font-family:Barlow Condensed,sans-serif;font-size:15px;font-weight:700;color:' + (isSel ? 'var(--accent)' : 'var(--w)') + '">' + prec.label + '</div><div style="font-size:11px;color:var(--wm)">' + prec.sub + '</div></div>' + (isSel ? '<div style="width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px">✓</div>' : '');
+        btn.onclick = () => {
+          COACH.answers['equipment'] = prec.value;
+          btn.style.borderColor = 'var(--accent)';
+          setTimeout(_next, 220);
+        };
+        col2.appendChild(btn);
+      });
+      body.appendChild(col2);
+    } else {
+      // Choix principal du lieu
+      const col = document.createElement('div');
+      col.style.cssText = 'display:flex;flex-direction:column;gap:8px';
+      step.choices.forEach(choice => {
+        const isSel = COACH.answers['_equipType'] === choice.value;
+        const btn = document.createElement('button');
+        btn.style.cssText = 'width:100%;display:flex;align-items:center;gap:12px;padding:14px;border-radius:8px;border:2px solid ' + (isSel ? 'var(--accent)' : 'var(--g1)') + ';background:' + (isSel ? 'rgba(232,25,44,0.08)' : 'var(--black3)') + ';cursor:pointer;text-align:left;transition:all 0.15s';
+        btn.innerHTML = '<div style="width:40px;height:40px;border-radius:8px;background:var(--black2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">' + choice.icon + '</div><div style="flex:1"><div style="font-family:Barlow Condensed,sans-serif;font-size:16px;font-weight:700;color:' + (isSel ? 'var(--accent)' : 'var(--w)') + '">' + choice.label + '</div><div style="font-size:11px;color:var(--wm)">' + choice.sub + '</div></div>' + (choice.precisions ? '<div style="color:var(--wm);font-size:18px">›</div>' : '');
+        btn.onclick = () => {
+          if (choice.precisions) {
+            COACH.answers['_equipType'] = choice.value;
+            _coachRenderStep(overlay);
+          } else {
+            COACH.answers['equipment'] = choice.value;
+            COACH.answers['_equipType'] = choice.value;
+            btn.style.borderColor = 'var(--accent)';
+            setTimeout(_next, 220);
+          }
+        };
+        col.appendChild(btn);
+      });
+      body.appendChild(col);
+    }
+  }
+
+  // ════════════════════════════════════════
+  // TYPE : multiselect — cases + champ texte libre
+  // ════════════════════════════════════════
+  else if (step.type === 'multiselect') {
+    if (!COACH.answers._constraintSet) COACH.answers._constraintSet = new Set();
+    const sel = COACH.answers._constraintSet;
+
+    const col = document.createElement('div');
+    col.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:14px';
+
+    step.choices.forEach(choice => {
+      const isSel = sel.has(choice.value);
+      const isExclusive = choice.exclusive;
+      const row = document.createElement('button');
+      row.style.cssText = 'width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;border:2px solid ' + (isSel ? 'var(--accent)' : 'var(--g1)') + ';background:' + (isSel ? 'rgba(232,25,44,0.08)' : 'var(--black3)') + ';cursor:pointer;text-align:left;transition:all 0.15s';
+
+      const checkBox = document.createElement('div');
+      checkBox.style.cssText = 'width:22px;height:22px;border-radius:' + (isExclusive ? '50%' : '5px') + ';border:2px solid ' + (isSel ? 'var(--accent)' : 'var(--g1)') + ';background:' + (isSel ? 'var(--accent)' : 'transparent') + ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;transition:all 0.15s';
+      if (isSel) checkBox.textContent = '✓';
+
+      row.innerHTML += '<div style="font-size:18px;flex-shrink:0">' + choice.icon + '</div>';
+      const textDiv = document.createElement('div');
+      textDiv.style.flex = '1';
+      textDiv.innerHTML = '<div style="font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700;color:' + (isSel ? 'var(--accent)' : 'var(--w)') + '">' + choice.label + '</div><div style="font-size:11px;color:var(--wm)">' + choice.sub + '</div>';
+
+      row.insertBefore(checkBox, row.firstChild);
+      row.appendChild(textDiv);
+
+      row.addEventListener('click', () => {
+        if (isExclusive) { sel.clear(); sel.add(choice.value); }
+        else { sel.delete('aucune'); sel.has(choice.value) ? sel.delete(choice.value) : sel.add(choice.value); }
+        COACH.answers._constraintSet = sel;
+        _coachRenderStep(overlay);
+      });
+      col.appendChild(row);
+    });
+    body.appendChild(col);
+
+    // Champ texte libre
+    const freeWrap = document.createElement('div');
+    freeWrap.style.cssText = 'padding:12px 14px;background:var(--black2);border:1px solid var(--g1);border-radius:8px;margin-bottom:16px';
+    const freeLbl = document.createElement('div');
+    freeLbl.style.cssText = 'font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--wm);margin-bottom:8px';
+    freeLbl.textContent = 'Contrainte spécifique (optionnel)';
+    const freeInp = document.createElement('input');
+    freeInp.type = 'text';
+    freeInp.placeholder = 'ex: valgus genoux, hernie L4-L5, tendinite épaule...';
+    freeInp.value = COACH.answers._constraintFree || '';
+    freeInp.style.cssText = 'width:100%;background:transparent;border:none;color:var(--w);font-family:Barlow,sans-serif;font-size:13px;outline:none;box-sizing:border-box';
+    freeInp.addEventListener('input', () => { COACH.answers._constraintFree = freeInp.value; });
+    freeInp.addEventListener('click', e => e.stopPropagation());
+    freeWrap.appendChild(freeLbl); freeWrap.appendChild(freeInp);
+    body.appendChild(freeWrap);
+
+    const contBtn = document.createElement('button');
+    contBtn.style.cssText = 'width:100%;font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;box-shadow:0 0 16px var(--theme-glow)';
+    contBtn.textContent = 'Continuer →';
+    contBtn.onclick = () => {
+      const parts = [...sel];
+      if (COACH.answers._constraintFree?.trim()) parts.push(COACH.answers._constraintFree.trim());
+      COACH.answers.constraint = parts.length ? parts.join(', ') : 'aucune';
+      _next();
+    };
+    body.appendChild(contBtn);
+  }
+
+  // ════════════════════════════════════════
+  // TYPE : choice classique
+  // ════════════════════════════════════════
+  else {
+    const col = document.createElement('div');
+    col.style.cssText = 'display:flex;flex-direction:column;gap:10px';
+    step.choices.forEach(choice => {
+      const isSel = COACH.answers[step.id] === choice.value;
+      const btn = document.createElement('button');
+      btn.style.cssText = 'width:100%;display:flex;align-items:center;gap:14px;padding:16px;border-radius:8px;border:2px solid ' + (isSel ? 'var(--accent)' : 'var(--g1)') + ';background:' + (isSel ? 'rgba(232,25,44,0.08)' : 'var(--black3)') + ';cursor:pointer;text-align:left;transition:all 0.15s';
+      const iw = document.createElement('div');
+      iw.style.cssText = 'width:44px;height:44px;border-radius:8px;background:' + (isSel ? 'rgba(232,25,44,0.15)' : 'var(--black2)') + ';display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0';
+      iw.textContent = choice.icon;
+      const tw = document.createElement('div'); tw.style.flex = '1';
+      tw.innerHTML = '<div style="font-family:Barlow Condensed,sans-serif;font-size:16px;font-weight:700;color:' + (isSel?'var(--accent)':'var(--w)') + '">' + choice.label + '</div><div style="font-size:11px;color:var(--wm);margin-top:2px">' + choice.sub + '</div>';
+      btn.appendChild(iw); btn.appendChild(tw);
+      if (isSel) {
+        const ck = document.createElement('div');
+        ck.style.cssText = 'width:22px;height:22px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0';
+        ck.textContent = '✓';
+        btn.appendChild(ck);
+      }
+      btn.addEventListener('click', () => {
+        COACH.answers[step.id] = choice.value;
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.background = 'rgba(232,25,44,0.08)';
+        setTimeout(_next, 220);
+      });
+      col.appendChild(btn);
+    });
+    body.appendChild(col);
+  }
+
+  // Bouton retour
+  if (COACH.stepIdx > 0 && step.type !== 'multiselect') {
+    const backBtn = document.createElement('button');
+    backBtn.style.cssText = 'width:100%;margin-top:14px;font-family:Barlow Condensed,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px;border-radius:4px;border:1px solid var(--g1);background:transparent;color:var(--wm);cursor:pointer';
+    backBtn.textContent = '← Retour';
+    backBtn.onclick = () => { COACH.stepIdx--; _coachRenderStep(overlay); };
+    body.appendChild(backBtn);
+  }
+
+  overlay.appendChild(body);
 }
 
-function _coachSend() {
-  const inp = document.getElementById('coach-inp');
-  if (!inp || !inp.value.trim() || COACH?.done) return;
-  const msg = inp.value.trim();
-  inp.value = '';
-  _coachAddMsg('user', msg);
-  COACH.messages.push({ role: 'user', content: msg });
-  _coachThink();
-}
+async function _coachGenerate(overlay) {
+  // Écran de génération
+  overlay.innerHTML = '';
 
-async function _coachThink() {
-  // Afficher "en train de réfléchir..."
-  const loadingBubble = _coachAddMsg('coach', '', true);
+  const screen = document.createElement('div');
+  screen.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;gap:20px';
 
-  // Données utilisateur pour contexte
+  const spider = document.createElement('div');
+  spider.style.cssText = 'font-size:64px;animation:popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275)';
+  spider.textContent = '🕷️';
+
+  const genTitle = document.createElement('div');
+  genTitle.style.cssText = 'font-family:Bebas Neue,sans-serif;font-size:28px;color:var(--w);text-align:center';
+  genTitle.textContent = 'Création de ton programme...';
+
+  const genSub = document.createElement('div');
+  genSub.id = 'coach-gen-sub';
+  genSub.style.cssText = 'font-size:13px;color:var(--wm);text-align:center';
+  genSub.textContent = 'Analyse de tes réponses';
+
+  const dots = document.createElement('div');
+  dots.style.cssText = 'font-size:28px;letter-spacing:8px;color:var(--accent);animation:loadDots 1s infinite';
+  dots.textContent = '···';
+
+  screen.appendChild(spider);
+  screen.appendChild(genTitle);
+  screen.appendChild(genSub);
+  screen.appendChild(dots);
+  overlay.appendChild(screen);
+
+  // Animer les sous-titres
+  const subTexts = ['Analyse de tes réponses', 'Sélection des exercices', 'Calcul des volumes', 'Équilibrage de la semaine', 'Finalisation du programme'];
+  let si = 0;
+  const subInterval = setInterval(() => {
+    si = (si + 1) % subTexts.length;
+    if (genSub) genSub.textContent = subTexts[si];
+  }, 900);
+
+  if (!getAnthropicKey()) {
+    clearInterval(subInterval);
+    _coachShowError(overlay, "Clé API manquante — configure-la dans Profil → Paramètres IA");
+    return;
+  }
+
+  // Construire le prompt depuis les réponses
+  const a = COACH.answers;
+  // Construire le résumé des contraintes depuis le set si besoin
+  if (!a.constraint && a._constraintSet) {
+    const parts = [...(a._constraintSet || [])];
+    if (a._constraintFree?.trim()) parts.push(a._constraintFree.trim());
+    a.constraint = parts.length ? parts.join(', ') : 'aucune';
+  }
   const rms = DB.get('rms', {});
-  const sessions = DB.get('sessions', []);
-  const hasHistory = sessions.length > 0 || Object.keys(rms).length > 0;
-  const rmSummary = Object.entries(rms).slice(0, 5).map(([e, vals]) => {
-    const best = Math.max(...vals.map(v => v.v));
-    return e + ': ' + best + 'kg';
-  }).join(', ');
+  const rmSummary = Object.entries(rms).slice(0, 4).map(([e,v]) => e + ': ' + Math.max(...v.map(x=>x.v)) + 'kg').join(', ');
 
-  const systemPrompt = `Tu es un coach sportif bienveillant, chaleureux et expert. Tu aides l'utilisateur à créer un programme d'entraînement personnalisé via une conversation naturelle.
+  // Formater les contraintes (multi-select + texte libre)
+  const constraintAns = a.constraint || { selected: [], custom: '' };
+  const constraintList = typeof constraintAns === 'string'
+    ? constraintAns
+    : [...(constraintAns.selected || []), constraintAns.custom].filter(Boolean).join(', ') || 'aucune';
 
-CONTEXTE UTILISATEUR :
-- Historique : ${hasHistory ? sessions.length + ' séances enregistrées' : 'aucune donnée'}
-- Records (1RM) : ${rmSummary || 'aucun enregistré'}
-- Données collectées jusqu'ici : ${JSON.stringify(COACH.context)}
+  const userMsg = `Crée un programme d'entraînement avec ces paramètres :
+- Niveau : ${a.level}
+- Objectif : ${a.goal}
+- Modèle physique inspirant : ${a.physique || 'sans préférence'}
+- Fréquence : ${a.days} jours par semaine
+- Durée par séance : ${a.duration} minutes
+- Lieu / matériel : ${a.equipment}
+- Contraintes physiques : ${constraintList}
+${rmSummary ? '- Records (1RM) : ' + rmSummary : ''}
 
-TON RÔLE :
-1. Poser des questions simples, une à la fois, pour comprendre : niveau, objectif, disponibilité, matériel, contraintes physiques
-2. L'utilisateur ne connaît pas forcément les termes fitness — parle simplement
-3. Quand tu as assez d'infos (5-7 échanges), génère le programme complet au format JSON
-4. Si l'utilisateur est vague, propose des options concrètes et rassurantes
-5. Adapter le ton : encourageant, pas condescendant
+Le modèle physique inspirant doit influencer le style d'entraînement (exercices choisis, ratio force/cardio/mobilité, intensité). Génère un programme complet et adapté.`;
 
-EXTRACTION DE DONNÉES :
-À chaque réponse, extrait les infos pertinentes et mets à jour le contexte en incluant à la fin de ton message (invisiblement pour l'utilisateur) un bloc JSON entre les balises <ctx> et </ctx>.
+  const systemPrompt = `Tu es un coach sportif expert. Génère un programme d'entraînement personnalisé.
 
 FORMAT DU PROGRAMME FINAL :
-Quand tu as assez d'infos, génère le programme en terminant avec un bloc entre <prog> et </prog> contenant exactement ce JSON :
+Retourne UNIQUEMENT un bloc <prog>...</prog> contenant ce JSON exact :
 {
-  "name": "Nom du programme",
-  "duration": 6,
-  "keywords": ["objectif1"],
+  "name": "Nom court et motivant",
+  "duration": 8,
+  "keywords": ["objectif"],
   "structure": "repeat",
   "days": [
     {"l":"Lun","n":"Nom séance","t":"muscle","dur":"45 min","rest":75,"foc":"focus",
-     "exos":[{"n":"Exercice principal","s":"3×10","m":"muscles"}],
-     "card":"Échauffement : 5 min cardio léger + mobilité",
-     "tip":"Retour au calme : étirements 5 min"},
+     "exos":[{"n":"Exercice","s":"3×10","m":"muscles"}],
+     "card":"Échauffement : description",
+     "tip":"Retour au calme : étirements"},
     {"l":"Mar","n":"Repos","t":"rest","dur":"—","rest":0,"foc":"","exos":[],"card":null,"tip":""}
   ]
 }
 
-IMPORTANT : Ne mets JAMAIS l'échauffement ni le retour au calme dans le tableau "exos". Utilise :
-- "card" pour décrire l'échauffement (affiché dans la section Échauffement)
-- "tip" pour décrire le retour au calme (affiché dans la section Récupération)
-- "exos" uniquement pour les exercices principaux d'entraînement
-
-RÈGLES DU PROGRAMME :
-- Adapte la fréquence au niveau (débutant: 2-3j, intermédiaire: 3-4j, avancé: 4-5j)
+RÈGLES :
+- Types de jour : "muscle", "hiit", "cardio", "z2", "rest"
+- Ne mets JAMAIS échauffement/retour au calme dans exos — utilise card et tip
+- Adapte le volume au niveau (débutant: 2-3 séries, intermédiaire: 3-4, avancé: 4-5)
 - Équilibre poussée/tirage/jambes
-- Exercices simples et connus pour débutants
-- Repos suffisants entre séances
-- Si l'utilisateur a des douleurs ou blessures, exclure les exercices concernés`;
-
-  if (!getAnthropicKey()) {
-    const loading = document.getElementById('coach-loading');
-    if (loading) loading.closest('div').remove();
-    _coachAddMsg('coach', "**Clé API manquante**\n\nPour utiliser le coach IA, ajoute ta clé Anthropic dans **Profil → Paramètres IA**.\n\nCrée une clé gratuite sur console.anthropic.com");
-    return;
-  }
+- Respecte les contraintes physiques
+- Réponds UNIQUEMENT avec le bloc <prog>...</prog>, rien d'autre`;
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': getAnthropicKey(),
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
+        'Content-Type': 'application/json',
+        'x-api-key': getAnthropicKey(),
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
+        max_tokens: 2000,
         system: systemPrompt,
-        messages: COACH.messages
-          .filter((m, i) => !(i === 0 && m.role === 'assistant')) // l'API exige que ça commence par user
-          .map(m => ({ role: m.role, content: m.content }))
+        messages: [{ role: 'user', content: userMsg }]
       })
     });
 
+    clearInterval(subInterval);
     const data = await res.json();
-    const raw = data.content?.find(b => b.type === 'text')?.text || "Désolé, je n'ai pas pu répondre. Réessaie.";
-
-    // Extraire le contexte mis à jour
-    const ctxMatch = raw.match(/<ctx>([\s\S]*?)<\/ctx>/);
-    if (ctxMatch) {
-      try { Object.assign(COACH.context, JSON.parse(ctxMatch[1])); } catch {}
-    }
-
-    // Extraire le programme généré
+    const raw = data.content?.find(b => b.type === 'text')?.text || '';
     const progMatch = raw.match(/<prog>([\s\S]*?)<\/prog>/);
-    const cleanText = raw.replace(/<ctx>[\s\S]*?<\/ctx>/g, '').replace(/<prog>[\s\S]*?<\/prog>/g, '').trim();
 
-    // Supprimer le loading et afficher la réponse
-    const loading = document.getElementById('coach-loading');
-    if (loading) loading.closest('div').remove();
-
-    COACH.messages.push({ role: 'assistant', content: cleanText });
-    _coachAddMsg('coach', cleanText);
-
-    // Si programme généré → afficher les boutons d'action
-    if (progMatch) {
-      try {
-        const prog = JSON.parse(progMatch[1]);
-        COACH.generatedProg = prog;
-        COACH.done = true;
-        _coachShowProgActions(prog);
-      } catch (e) {
-        console.warn('Prog parse error:', e);
-      }
-    }
+    if (!progMatch) throw new Error('Format invalide');
+    const prog = JSON.parse(progMatch[1]);
+    _coachShowResult(overlay, prog);
   } catch (err) {
-    const loading = document.getElementById('coach-loading');
-    if (loading) loading.closest('div').remove();
-    _coachAddMsg('coach', "Connexion perdue. Vérifie ta connexion et réessaie.");
+    clearInterval(subInterval);
+    _coachShowError(overlay, 'Génération échouée — ' + err.message);
   }
-
-  // Re-focus input
-  const inp = document.getElementById('coach-inp');
-  if (inp && !COACH.done) inp.focus();
 }
 
-function _coachShowProgActions(prog) {
-  const chat = document.getElementById('coach-chat');
-  if (!chat) return;
+function _coachShowResult(overlay, prog) {
+  overlay.innerHTML = '';
 
-  const actWrap = _pbEl('div', { style:'margin-top:8px;padding:14px;background:rgba(232,25,44,0.05);border:1px solid rgba(232,25,44,0.2);border-radius:8px' });
+  const trainDays = (prog.days||[]).filter(d => d.t !== 'rest');
+  const totalExos = trainDays.reduce((a,d) => a + (d.exos||[]).length, 0);
 
-  // Résumé du programme
-  const trainDays = prog.days.filter(d => d.t !== 'rest').length;
-  const totalExos = prog.days.reduce((a, d) => a + (d.exos||[]).length, 0);
-  actWrap.appendChild(_pbEl('div', { style:'font-family:Bebas Neue,sans-serif;font-size:22px;color:var(--w);margin-bottom:4px' }, prog.name));
-  actWrap.appendChild(_pbEl('div', { style:'font-size:12px;color:var(--wm);margin-bottom:14px' }, prog.duration + ' semaines · ' + trainDays + ' j/sem · ' + totalExos + ' exercices'));
+  // Header succès
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:calc(var(--st)+14px) 20px 14px;background:var(--black2);border-bottom:1px solid var(--g1);display:flex;align-items:center;gap:12px;flex-shrink:0';
+  const closeBtn = document.createElement('button');
+  closeBtn.style.cssText = 'width:36px;height:36px;border-radius:50%;background:var(--g1);border:none;color:var(--w);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0';
+  closeBtn.textContent = '✕';
+  closeBtn.onclick = () => { overlay.remove(); COACH = null; };
+  const titleEl = document.createElement('div');
+  titleEl.style.flex = '1';
+  titleEl.innerHTML = '<div style="font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--green)">✓ PROGRAMME CRÉÉ</div><div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--w);line-height:1">' + prog.name + '</div>';
+  header.appendChild(closeBtn);
+  header.appendChild(titleEl);
+  overlay.appendChild(header);
 
-  // Boutons
-  const btnRow = _pbEl('div', { style:'display:flex;flex-direction:column;gap:8px' });
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px';
 
-  const btnActivate = _pbEl('button', { style:'width:100%;font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:14px;border-radius:4px;border:none;background:var(--accent);color:#fff;cursor:pointer;box-shadow:0 0 16px var(--theme-glow)' }, '✓ Enregistrer et activer');
+  // Stats
+  const statsRow = document.createElement('div');
+  statsRow.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px';
+  [[trainDays.length, 'j/semaine'],[prog.duration||6, 'semaines'],[totalExos, 'exercices']].forEach(([v,l]) => {
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--black3);border:1px solid var(--g1);border-radius:6px;padding:12px;text-align:center';
+    card.innerHTML = '<div style="font-family:Bebas Neue,sans-serif;font-size:32px;color:var(--accent);line-height:1">' + v + '</div><div style="font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--wm)">' + l + '</div>';
+    statsRow.appendChild(card);
+  });
+  body.appendChild(statsRow);
+
+  // Aperçu des jours
+  const daysLabel = document.createElement('div');
+  daysLabel.style.cssText = 'font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--wm);margin-bottom:10px';
+  daysLabel.textContent = 'Structure de la semaine';
+  body.appendChild(daysLabel);
+
+  const daysWrap = document.createElement('div');
+  daysWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:24px';
+  (prog.days||[]).forEach(d => {
+    const row = document.createElement('div');
+    const isRest = d.t === 'rest';
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:6px;background:' + (isRest ? 'transparent' : 'var(--black3)') + ';border:1px solid ' + (isRest ? 'var(--g1)' : 'rgba(232,25,44,0.15)');
+
+    const dayLabel = document.createElement('div');
+    dayLabel.style.cssText = 'font-family:Barlow Condensed,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--wm);width:28px;flex-shrink:0';
+    dayLabel.textContent = d.l;
+
+    const typeIcon = { muscle:'💪', hiit:'⚡', cardio:'🏃', z2:'🚴', rest:'😴' }[d.t] || '•';
+    const iconEl2 = document.createElement('div');
+    iconEl2.style.cssText = 'font-size:16px;flex-shrink:0';
+    iconEl2.textContent = typeIcon;
+
+    const nameEl2 = document.createElement('div');
+    nameEl2.style.flex = '1';
+    nameEl2.innerHTML = '<div style="font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;color:' + (isRest ? 'var(--wm)' : 'var(--w)') + '">' + d.n + '</div>' + (d.exos?.length ? '<div style="font-size:10px;color:var(--wm)">' + d.exos.slice(0,3).map(e=>e.n).join(' · ') + (d.exos.length>3?' +'+( d.exos.length-3):'') + '</div>' : '');
+
+    const durEl = document.createElement('div');
+    durEl.style.cssText = 'font-family:Barlow Condensed,sans-serif;font-size:11px;font-weight:700;color:var(--wm);flex-shrink:0';
+    durEl.textContent = d.dur || '';
+
+    row.appendChild(dayLabel);
+    row.appendChild(iconEl2);
+    row.appendChild(nameEl2);
+    row.appendChild(durEl);
+    daysWrap.appendChild(row);
+  });
+  body.appendChild(daysWrap);
+
+  // Boutons action
+  const btnActivate = document.createElement('button');
+  btnActivate.style.cssText = 'width:100%;font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:16px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;margin-bottom:8px;box-shadow:0 0 20px var(--theme-glow)';
+  btnActivate.textContent = '✓ Enregistrer et activer';
   btnActivate.onclick = () => _coachSaveProg(prog, true);
 
-  const btnSave = _pbEl('button', { style:'width:100%;font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px;border-radius:4px;border:1px solid var(--g1);background:transparent;color:var(--wm);cursor:pointer' }, 'Enregistrer sans activer');
+  const btnSave = document.createElement('button');
+  btnSave.style.cssText = 'width:100%;font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:14px;border-radius:6px;border:1px solid var(--g1);background:transparent;color:var(--wm);cursor:pointer;margin-bottom:8px';
+  btnSave.textContent = 'Enregistrer sans activer';
   btnSave.onclick = () => _coachSaveProg(prog, false);
 
-  const btnRefine = _pbEl('button', { style:'width:100%;font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px;border-radius:4px;border:1px solid rgba(232,25,44,0.3);background:transparent;color:var(--accent);cursor:pointer' }, '✦ Modifier avec le coach');
-  btnRefine.onclick = () => {
-    COACH.done = false;
-    const inp = document.getElementById('coach-inp');
-    if (inp) { inp.placeholder = "Dis ce que tu veux changer..."; inp.focus(); }
-    COACH.messages.push({ role: 'user', content: '[L\'utilisateur veut modifier le programme généré]' });
+  const btnRedo = document.createElement('button');
+  btnRedo.style.cssText = 'width:100%;font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:14px;border-radius:6px;border:1px solid rgba(232,25,44,0.3);background:transparent;color:var(--accent);cursor:pointer';
+  btnRedo.textContent = '↺ Recommencer';
+  btnRedo.onclick = () => {
+    COACH = { answers: {}, stepIdx: 0, done: false };
+    _coachRenderStep(overlay);
   };
 
-  btnRow.appendChild(btnActivate);
-  btnRow.appendChild(btnSave);
-  btnRow.appendChild(btnRefine);
-  actWrap.appendChild(btnRow);
-  chat.appendChild(actWrap);
-  requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; });
+  body.appendChild(btnActivate);
+  body.appendChild(btnSave);
+  body.appendChild(btnRedo);
+  overlay.appendChild(body);
 }
+
+function _coachShowError(overlay, msg) {
+  overlay.innerHTML = '';
+  const screen = document.createElement('div');
+  screen.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;gap:16px;text-align:center';
+  screen.innerHTML = '<div style="font-size:48px">⚠️</div><div style="font-family:Bebas Neue,sans-serif;font-size:24px;color:var(--w)">' + msg + '</div>';
+  const retry = document.createElement('button');
+  retry.style.cssText = 'font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:14px 24px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;margin-top:8px';
+  retry.textContent = '↺ Réessayer';
+  retry.onclick = () => _coachGenerate(overlay);
+  screen.appendChild(retry);
+  overlay.appendChild(screen);
+}
+
+// _coachAddMsg et _coachSend conservés pour compatibilité (coach textuel)
+function _coachAddMsg() {}
+function _coachSend() {}
 
 function _coachSaveProg(prog, activate) {
   // Mots-clés pour détecter échauffement et retour au calme
