@@ -508,6 +508,29 @@ button[onclick="openForceMax()"] {
       <!-- Stats Section -->
       <div class="sec">Historique séances</div>
       <div id="st-prs"></div>
+
+      <!-- Paramètres IA -->
+      <div class="sec">Paramètres IA</div>
+      <div style="background:var(--black3);border:1px solid var(--g1);border-radius:6px;padding:16px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="font-size:20px">✦</span>
+          <div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--w)">Clé API Anthropic</div>
+            <div style="font-size:11px;color:var(--wm)">Nécessaire pour le Coach IA et l'analyse de programme</div>
+          </div>
+        </div>
+        <div id="api-key-status" style="margin-bottom:10px;font-size:11px"></div>
+        <div style="display:flex;gap:8px">
+          <input id="api-key-input" type="password" placeholder="sk-ant-api..." autocomplete="off"
+            style="flex:1;background:var(--black2);border:1px solid var(--g1);border-radius:4px;color:var(--w);font-family:'Barlow',sans-serif;font-size:13px;padding:10px 12px;outline:none">
+          <button onclick="saveApiKey()" style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:10px 14px;border-radius:4px;border:none;background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap">Sauvegarder</button>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <a href="https://console.anthropic.com" target="_blank" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);text-decoration:none">Créer une clé →</a>
+          <span style="color:var(--g2)">·</span>
+          <button onclick="deleteApiKey()" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--wm);background:none;border:none;cursor:pointer;padding:0">Supprimer la clé</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -580,10 +603,12 @@ button[onclick="openForceMax()"] {
 //   'themeAccent'      → '#C9A84C' — couleur accent sauvegardée
 // ══════════════════════════════════════════════════════════════════════
 // ══════════════════════════════════════════════════════════════════════
-// CLÉ API ANTHROPIC — remplace par ta vraie clé
-// Crée une clé sur https://console.anthropic.com avec un budget limité
+// CLÉ API ANTHROPIC — stockée en localStorage, jamais dans le code
+// Configurée dans Profil → Paramètres IA
 // ══════════════════════════════════════════════════════════════════════
-const ANTHROPIC_KEY = 'sk-ant-REMPLACE-PAR-TA-CLE';
+function getAnthropicKey() {
+  return localStorage.getItem('anthropic_api_key') || '';
+}
 
 const DB = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -1219,7 +1244,7 @@ function goTo(id) {
   if (fixedBtns) fixedBtns.style.display = id === 'prog' ? 'block' : 'none';
   if (id === 'home') { renderHome(); }
   if (id === 'prog') { renderWeek(); _checkFinishBanner(); }
-  if (id === 'profil') { fillSelects(); renderRecords(); renderChart(); renderPRs(); renderXP(); renderRank(); }
+  if (id === 'profil') { fillSelects(); renderRecords(); renderChart(); renderPRs(); renderXP(); renderRank(); _renderApiKeyStatus(); }
 }
 
 // ── Sélecteur visuel de programme (bottom sheet)
@@ -4758,12 +4783,20 @@ async function _pbDeepAnalysis(container, btn) {
     }))
   };
 
+  if (!getAnthropicKey()) {
+    const r2 = document.getElementById('pb-ai-result');
+    if (r2) r2.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--amber);text-align:center">Clé API manquante — configure-la dans Profil → Paramètres IA</div>';
+    btn.textContent = '✦ Analyse approfondie par IA';
+    btn.disabled = false;
+    return;
+  }
+
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method:'POST',
       headers:{
         'Content-Type':'application/json',
-        'x-api-key': ANTHROPIC_KEY,
+        'x-api-key': getAnthropicKey(),
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },
@@ -5087,12 +5120,19 @@ RÈGLES DU PROGRAMME :
 - Repos suffisants entre séances
 - Si l'utilisateur a des douleurs ou blessures, exclure les exercices concernés`;
 
+  if (!getAnthropicKey()) {
+    const loading = document.getElementById('coach-loading');
+    if (loading) loading.closest('div').remove();
+    _coachAddMsg('coach', "**Clé API manquante**\n\nPour utiliser le coach IA, ajoute ta clé Anthropic dans **Profil → Paramètres IA**.\n\nCrée une clé gratuite sur console.anthropic.com");
+    return;
+  }
+
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
           'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_KEY,
+          'x-api-key': getAnthropicKey(),
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true'
         },
@@ -5453,6 +5493,42 @@ function _openExoForm(libraryOverlay, exo, idx) {
     if (exo.name && !EXS.includes(exo.name)) EXS.push(exo.name);
   });
 })();
+
+// ══════════════════════════════════════════════════════════════════════
+// GESTION CLÉ API — Profil → Paramètres IA
+// ══════════════════════════════════════════════════════════════════════
+function saveApiKey() {
+  const inp = document.getElementById('api-key-input');
+  if (!inp) return;
+  const key = inp.value.trim();
+  if (!key) { showToast('Clé vide', 'var(--amber)'); return; }
+  if (!key.startsWith('sk-ant-')) {
+    showToast('Clé invalide — doit commencer par sk-ant-', 'var(--amber)');
+    return;
+  }
+  localStorage.setItem('anthropic_api_key', key);
+  inp.value = '';
+  _renderApiKeyStatus();
+  showToast('✓ Clé API sauvegardée', 'var(--green)');
+}
+
+function deleteApiKey() {
+  localStorage.removeItem('anthropic_api_key');
+  _renderApiKeyStatus();
+  showToast('Clé supprimée', 'var(--wm)');
+}
+
+function _renderApiKeyStatus() {
+  const el = document.getElementById('api-key-status');
+  if (!el) return;
+  const key = localStorage.getItem('anthropic_api_key');
+  if (key) {
+    const masked = key.slice(0, 12) + '••••••••' + key.slice(-4);
+    el.innerHTML = '<span style="color:var(--green);font-weight:700">✓ Clé configurée</span> <span style="color:var(--wm);font-family:monospace;font-size:11px">' + masked + '</span>';
+  } else {
+    el.innerHTML = '<span style="color:var(--amber)">⚠ Aucune clé — les fonctions IA ne fonctionneront pas</span>';
+  }
+}
 </script>
 
 <!-- MODAL QUITTER SÉANCE -->
