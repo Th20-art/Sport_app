@@ -1494,9 +1494,39 @@ const EXO_FR_TO_EN = {
 
 function normalizeExoName(name) {
   if (!name) return name;
-  const lower = name.toLowerCase().trim();
-  return EXO_FR_TO_EN[lower] || name;
+  const lower = name.toLowerCase().trim()
+    // Normaliser les accents courants FR
+    .replace(/é|è|ê/g, 'e').replace(/à|â/g, 'a').replace(/û/g,'u').replace(/î/g,'i').replace(/ô/g,'o');
+  // Chercher dans la table avec la version normalisée
+  if (EXO_FR_TO_EN[lower]) return EXO_FR_TO_EN[lower];
+  // Chercher aussi dans la table originale sans normalisation accent
+  const lowerRaw = name.toLowerCase().trim();
+  if (EXO_FR_TO_EN[lowerRaw]) return EXO_FR_TO_EN[lowerRaw];
+  return name;
 }
+
+// Table étendue avec variantes accentuées et casse mixte
+Object.assign(EXO_FR_TO_EN, {
+  'squat gobelet': 'Goblet squat',
+  'developpe couche barre': 'Barbell bench press',
+  'developpe couche halteres': 'Dumbbell bench press',
+  'developpe incline halteres': 'Incline dumbbell press',
+  'developpe epaules machine': 'Machine shoulder press',
+  'developpe epaules halteres': 'Dumbbell shoulder press',
+  'developpe militaire': 'Overhead press',
+  'elevations laterales': 'Lateral raises',
+  'elevations laterales cable': 'Cable lateral raises',
+  'soulevé de terre': 'Deadlift',
+  'soulevé de terre roumain': 'Romanian deadlift',
+  'soulevé de terre trap bar': 'Deadlift',
+  'fentes halteres': 'Dumbbell lunges',
+  'curl biceps halteres': 'Dumbbell biceps curl',
+  'curl biceps': 'Dumbbell biceps curl',
+  'planche laterale': 'Plank',
+  'gainage lateral': 'Plank',
+  'gainage': 'Plank',
+  'developpe militaire halteres': 'Dumbbell shoulder press',
+});
 
 const EXS = ["Deadlift","Barbell bench press","Dumbbell bench press","Incline dumbbell press","Overhead press","Barbell squat","Goblet squat","Chin-ups","Pull-ups","Lat pulldown","Seated cable row","Barbell row","Dumbbell row","Dumbbell shoulder press","Machine shoulder press","Lateral raises","Cable lateral raises","Rear delt fly","Cable face pulls","Romanian deadlift","Dumbbell lunges","Leg press","Leg extension","Leg curl","Hip thrust","Dumbbell biceps curl","Hammer curl","Triceps pushdown","Skull crusher","Cable fly","Dumbbell fly","Assisted dips","Dips","Dip bar leg raises","Planche","Hollow body hold","Ab wheel rollout","Plank","Mountain climbers","Burpees","Jump squats","Battle ropes","Kettlebell swings","Tuck jumps","Renegade rows","Bear crawls","Push-ups","Jumping jacks","Jump rope","Rowing machine","Elliptical"];
 
@@ -1813,6 +1843,15 @@ function openProgSelector() {
   });
 
   // Bouton modifier — ouvre le builder avec le programme existant
+  // Handler bouton thème 🎨
+  sheet.querySelectorAll('.pss-theme').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const ci = parseInt(btn.dataset.ci);
+      openThemePicker(ci, sheet);
+    });
+  });
+
   sheet.querySelectorAll('.pss-edit').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -5786,9 +5825,11 @@ function _pbDayEditor(card, day, di) {
 
         // Reps — field text pour supporter MAX
         const repsWrap = _pbEl('div', { style:'position:relative' });
-        const repsInp = _pbEl('input', { type:'text', placeholder:'10', style:'width:100%;background:'+(isAI?'var(--black3)':isMax?'rgba(232,25,44,0.08)':'var(--black2)')+';border:1px solid '+(isMax?'var(--accent)':'var(--g1)')+';border-radius:3px;color:'+(isMax?'var(--accent)':'var(--w)')+';font-size:13px;font-weight:700;padding:5px 4px;outline:none;text-align:center', ...(isAI?{readonly:'true'}:{}) });
+        // Mode IA : inputs éditables (suppression du readonly)
+        const repsInp = _pbEl('input', { type:'text', placeholder:'10', style:'width:100%;background:'+(isMax?'rgba(232,25,44,0.08)':'var(--black2)')+';border:1px solid '+(isMax?'var(--accent)':'var(--g1)')+';border-radius:3px;color:'+(isMax?'var(--accent)':'var(--w)')+';font-size:13px;font-weight:700;padding:5px 4px;outline:none;text-align:center' });
         repsInp.value = isMax ? 'MAX' : (set.reps || 10);
-        if (!isAI) {
+        // Toujours activer les listeners (AI ou manuel)
+        {
           repsInp.addEventListener('input', e => {
             e.stopPropagation();
             if (!week[di].exos[ei].sets) week[di].exos[ei].sets = [...sets];
@@ -5856,11 +5897,11 @@ function _pbDayEditor(card, day, di) {
         }
 
         // Poids manuel (readonly si IA, caché si pct car calculé)
-        const weightStyle = 'width:100%;background:'+(isAI?'var(--black3)':'var(--black2)')+';border:1px solid var(--g1);border-radius:3px;color:var(--w);font-size:13px;font-weight:700;padding:5px 4px;outline:none;text-align:center';
-        const weightInp = _pbEl('input', { type:'number', min:'0', step:'2.5', placeholder: isPct?'—':'kg', style:weightStyle, ...(isAI||isPct?{readonly:'true'}:{}) });
+        const weightStyle = 'width:100%;background:var(--black2);border:1px solid var(--g1);border-radius:3px;color:var(--w);font-size:13px;font-weight:700;padding:5px 4px;outline:none;text-align:center';
+        const weightInp = _pbEl('input', { type:'number', min:'0', step:'2.5', placeholder: isPct?'—':'kg', style:weightStyle, ...(isPct?{readonly:'true'}:{}) });
         if (set.weight && !isPct) weightInp.value = set.weight;
         if (isAI && set.weight) weightInp.value = set.weight;
-        if (!isAI && !isPct) {
+        if (!isPct) {
           weightInp.addEventListener('input', e => { e.stopPropagation(); if(!week[di].exos[ei].sets) week[di].exos[ei].sets=[...sets]; week[di].exos[ei].sets[si].weight=parseFloat(weightInp.value); });
           weightInp.addEventListener('click', e => e.stopPropagation());
         }
@@ -5868,9 +5909,9 @@ function _pbDayEditor(card, day, di) {
         setRow.appendChild(weightInp);
 
         // Repos
-        const restInp = _pbEl('input', { type:'number', min:'0', step:'15', style:'width:100%;background:'+(isAI?'var(--black3)':'var(--black2)')+';border:1px solid var(--g1);border-radius:3px;color:var(--w);font-size:13px;font-weight:700;padding:5px 4px;outline:none;text-align:center', ...(isAI?{readonly:'true'}:{}) });
+        const restInp = _pbEl('input', { type:'number', min:'0', step:'15', style:'width:100%;background:var(--black2);border:1px solid var(--g1);border-radius:3px;color:var(--w);font-size:13px;font-weight:700;padding:5px 4px;outline:none;text-align:center' });
         restInp.value = set.rest || day.rest || 75;
-        if (!isAI) {
+        {
           restInp.addEventListener('input', e => { e.stopPropagation(); if(!week[di].exos[ei].sets) week[di].exos[ei].sets=[...sets]; week[di].exos[ei].sets[si].rest=parseInt(restInp.value); });
           restInp.addEventListener('click', e => e.stopPropagation());
         }
