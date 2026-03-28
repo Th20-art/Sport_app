@@ -1,20 +1,4 @@
 <!DOCTYPE html>
-<!--
-  ╔══════════════════════════════════════════════════════════════════════╗
-  ║           SPIDER-MAN TRAINING APP — Fichier principal               ║
-  ║                                                                      ║
-  ║  Structure du fichier :                                              ║
-  ║  1. HEAD        → méta PWA, polices, CSS variables                  ║
-  ║  2. HTML        → structure des 3 onglets (Home / Prog / Profil)    ║
-  ║  3. JAVASCRIPT  → données + logique + moteur de séance              ║
-  ║                                                                      ║
-  ║  Pour modifier :                                                     ║
-  ║  • Ajouter un programme  → cherche "const P0 =" ou "const P2 ="     ║
-  ║  • Changer les couleurs  → cherche "PROG_THEMES"                    ║
-  ║  • Ajouter un exercice   → cherche "const IMGS =" et "const EXS ="  ║
-  ║  • Modifier les repos    → cherche "const EXO_META ="               ║
-  ╚══════════════════════════════════════════════════════════════════════╝
--->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -4988,101 +4972,7 @@ function _pbSaveOnly() {
 let COACH = null;
 
 // Définition des étapes du flow
-const COACH_STEPS = [
-  {
-    id: 'physique',
-    icon: '✨',
-    question: 'Ton modèle physique ?',
-    sub: 'Pour calibrer la direction — pas une obligation, juste une inspiration',
-    type: 'model',
-    models: [
-      { label: 'Tom Holland', sub: 'Athlétique, fonctionnel, lean', value: 'Tom Holland (Spider-Man) : corps athlétique et fonctionnel, lean sans être massif, mobilité élevée, endurance', icon: '🕷️', color: '#E8192C' },
-      { label: 'Thor / Chris H.', sub: 'Masse musculaire, force, puissance', value: 'Thor (Chris Hemsworth) : masse musculaire importante, force brute, épaules larges, physique imposant', icon: '⚡', color: '#4A90E2' },
-      { label: 'Goku', sub: 'Performance extrême, explosivité', value: 'Goku : performance athlétique extrême, explosivité, endurance surhumaine, corps très sec et musclé', icon: '🔆', color: '#FFD700' },
-      { label: 'Gojo Satoru', sub: 'Sec, élancé, esthétique', value: 'Gojo (Jujutsu Kaisen) : corps sec et esthétique, musculature visible sans excès, style élancé et défini', icon: '🌀', color: '#8B5CF6' },
-      { label: 'Physique athlète', sub: 'Corps de sportif pro, équilibré', value: 'Athlète professionnel : physique équilibré et fonctionnel, performance et esthétique', icon: '🏆', color: '#1D9E75' },
-      { label: 'Sans préférence', sub: 'Je veux juste progresser', value: 'sans modèle particulier', icon: '🎯', color: '#888' },
-    ]
-  },
-  {
-    id: 'level',
-    icon: '🏃',
-    question: 'Où en es-tu physiquement ?',
-    sub: 'Pas de jugement — choisis ce qui te correspond le mieux',
-    type: 'choice',
-    choices: [
-      { label: 'Débutant', sub: 'Je commence ou je reprends', value: 'débutant', icon: '🌱' },
-      { label: 'Intermédiaire', sub: 'Je m\'entraîne depuis quelques mois', value: 'intermédiaire', icon: '⚡' },
-      { label: 'Avancé', sub: 'Je m\'entraîne régulièrement depuis + d\'1 an', value: 'avancé', icon: '🔥' },
-    ]
-  },
-  {
-    id: 'goal',
-    icon: '🎯',
-    question: 'Ton objectif principal ?',
-    sub: 'Ce que tu veux vraiment obtenir',
-    type: 'choice',
-    choices: [
-      { label: 'Prendre du muscle', sub: 'Prise de masse, volume', value: 'prise de masse', icon: '💪' },
-      { label: 'Perdre du poids', sub: 'Brûler des graisses', value: 'perte de poids', icon: '🔥' },
-      { label: 'Être plus fort', sub: 'Force maximale', value: 'force', icon: '🏋️' },
-      { label: 'Me sentir mieux', sub: 'Cardio, endurance, mobilité', value: 'endurance', icon: '🧘' },
-    ]
-  },
-  {
-    id: 'days',
-    icon: '📅',
-    question: 'Combien de jours par semaine ?',
-    sub: 'Sois réaliste — la régularité > l\'intensité',
-    type: 'choice',
-    choices: [
-      { label: '2 jours', sub: 'Minimum, idéal pour débutant', value: '2', icon: '😌' },
-      { label: '3 jours', sub: 'Le sweet spot', value: '3', icon: '✅' },
-      { label: '4 jours', sub: 'Bon volume hebdo', value: '4', icon: '💪' },
-      { label: '5 jours', sub: 'Entraînement intensif', value: '5', icon: '🔥' },
-    ]
-  },
-  {
-    id: 'duration',
-    icon: '⏱️',
-    question: 'Combien de temps par séance ?',
-    sub: 'Durée que tu peux tenir chaque semaine',
-    type: 'choice',
-    choices: [
-      { label: '30 min', sub: 'Court et efficace', value: '30', icon: '⚡' },
-      { label: '45 min', sub: 'Le bon équilibre', value: '45', icon: '✅' },
-      { label: '1 heure', sub: 'Séance complète', value: '60', icon: '💪' },
-      { label: '1h30+', sub: 'Pour les passionnés', value: '90', icon: '🏆' },
-    ]
-  },
-  {
-    id: 'equipment',
-    icon: '🏋️',
-    question: 'Tu t\'entraînes où ?',
-    sub: 'Pour adapter les exercices au matériel disponible',
-    type: 'equipment',
-    choices: [
-      { label: 'Salle complète', sub: 'Tout le matériel (câbles, machines, barres)', value: 'salle complète', icon: '🏢', detail: true },
-      { label: 'Basic Fit / low-cost', sub: 'Haltères, barres, quelques machines', value: 'salle low-cost type Basic Fit (haltères, barres, quelques machines, pas forcément tous les câbles)', icon: '💳', detail: false },
-      { label: 'Fitness parc / outdoor', sub: 'Barres de traction, anneaux, poids du corps', value: 'fitness parc outdoor (barres de traction, anneaux, dips, poids du corps)', icon: '🌳', detail: false },
-      { label: 'À la maison', sub: 'Poids du corps, peu de matériel', value: 'maison (poids du corps uniquement)', icon: '🏠', detail: false },
-      { label: 'Haltères + barre', sub: 'Home gym avec barbell et dumbbells', value: 'home gym avec haltères et barre', icon: '🏋️', detail: false },
-    ]
-  },
-  {
-    id: 'constraint',
-    icon: '⚠️',
-    question: 'Des zones à protéger ?',
-    sub: 'Blessures, douleurs, problèmes posturaux...',
-    type: 'constraint',
-    choices: [
-      { label: 'Aucune', sub: 'Je peux tout faire', value: '', icon: '✅' },
-      { label: 'Dos / lombaires', sub: 'Éviter flexion avec charge', value: 'dos et lombaires', icon: '🔴' },
-      { label: 'Épaules / poignets', sub: 'Adapter les poussées', value: 'épaules et poignets', icon: '🔴' },
-      { label: 'Genoux / hanches', sub: 'Adapter les jambes', value: 'genoux et hanches', icon: '🔴' },
-    ]
-  },
-];
+
 
 // Helper: fallback icon quand image absente
 function makeIconFallback(icon) {
@@ -5090,6 +4980,20 @@ function makeIconFallback(icon) {
   d.style.cssText = 'font-size:32px;display:flex;align-items:center;justify-content:center;width:100%;height:100%';
   d.textContent = icon;
   return d;
+}
+
+function openProgCoach() {
+  const sel = document.getElementById('prog-selector-sheet');
+  if (sel) sel.remove();
+
+  COACH = { answers: {}, stepIdx: 0, done: false };
+
+  const overlay = document.createElement('div');
+  overlay.id = 'prog-coach';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:2500;background:var(--black);display:flex;flex-direction:column;overflow:hidden';
+  document.body.appendChild(overlay);
+
+  _coachRenderStep(overlay);
 }
 
 function _coachRenderStep(overlay) {
@@ -5165,7 +5069,10 @@ function _coachRenderStep(overlay) {
         const img = document.createElement('img');
         img.src = choice.img;
         img.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:top center;filter:brightness(0.6)';
-        img.onerror = () => { img.remove(); imgH.appendChild(makeIconFallback(choice.icon)); };
+        img.onerror = () => {
+          if (choice.imgFallback) { img.src = choice.imgFallback; img.onerror = () => { img.remove(); imgH.appendChild(makeIconFallback(choice.icon)); }; }
+          else { img.remove(); imgH.appendChild(makeIconFallback(choice.icon)); }
+        };
         imgH.appendChild(img);
       } else {
         imgH.appendChild(makeIconFallback(choice.icon));

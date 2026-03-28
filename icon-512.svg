@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
-  <rect width="192" height="192" rx="32" fill="#0a0a0a"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="512" height="512">
+  <rect width="512" height="512" rx="32" fill="#0a0a0a"/>
   <!-- Toile -->
   <g stroke="#E8192C" stroke-width="1.5" fill="none" opacity="0.3">
     <line x1="96" y1="20" x2="20" y2="96"/>
