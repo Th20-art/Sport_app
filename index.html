@@ -1019,10 +1019,26 @@ function rmPct(reps) {
 function suggestW(exo, reps) {
   const rms = DB.get('rms', {});
   const coefs = DB.get('coefs', {});
-  if (!rms[exo] || !rms[exo].length) return null;
-  const best = Math.max(...rms[exo].map(r => r.v));
-  const c = coefs[exo] || 1.0;
-  return Math.round((best * rmPct(reps || 10) * c) / 2.5) * 2.5;
+  // 1. Depuis le 1RM enregistré
+  if (rms[exo]?.length) {
+    const best = Math.max(...rms[exo].map(r => r.v));
+    const c = coefs[exo] || 1.0;
+    return Math.round((best * rmPct(reps || 10) * c) / 2.5) * 2.5;
+  }
+  // 2. Depuis l'historique des séances
+  const sessions = DB.get('sessions', []);
+  const prevSets = sessions.flatMap(s => (s.sets||[]).filter(x => x.exo === exo && x.w > 0)).slice(-5);
+  if (prevSets.length) {
+    const avg = prevSets.reduce((a,b) => a+(b.w||0), 0) / prevSets.length;
+    return Math.round(avg / 2.5) * 2.5;
+  }
+  // 3. Estimation inter-exercices (transfer)
+  const transfer = estimateWeightFromTransfer(exo);
+  if (transfer?.weight > 0) return transfer.weight;
+  // 4. Table statique des poids par défaut
+  const defW = EXO_DEFAULT_WEIGHT[exo] ?? EXO_DEFAULT_WEIGHT[normalizeExoName(exo)];
+  if (defW != null && defW > 0) return defW;
+  return null;
 }
 
 function applyFeedback(exo, fb) {
@@ -2817,6 +2833,7 @@ function renderExo(s, badge) {
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <div style="font-size:13px;color:var(--wm)">${s.circuitMode ? `Circuit · Exo ${(s.eIdx||0)+1}/${s.totalExos} · Round ${(s.round||0)+1}/${s.totalRounds}` : isLast ? 'Dernière série' : `Série ${s.si+1}/${s.totalSets}`}</div>
           ${getExoIntent(e.n) ? `<span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:2px 8px;border-radius:2px;background:${getExoIntentColor(e.n)}22;color:${getExoIntentColor(e.n)};border:1px solid ${getExoIntentColor(e.n)}44">${getExoIntent(e.n)}</span>` : ''}
+          ${s.protocol ? `<span style="font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:2px 6px;border-radius:2px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.1)">${s.protocol}</span>` : ''}
         </div>
       </div>
 
@@ -2874,29 +2891,36 @@ function renderExo(s, badge) {
   function openSheet() { document.getElementById('adjust-sheet').style.display = 'block'; }
   function closeSheet() { document.getElementById('adjust-sheet').style.display = 'none'; }
 
-  document.getElementById('btn-adjust').addEventListener('click', openSheet);
-  document.getElementById('adjust-backdrop').addEventListener('click', closeSheet);
-  document.getElementById('adj-cancel').addEventListener('click', closeSheet);
+  // stopPropagation sur TOUT le sheet pour éviter le skip accidentel
+  document.getElementById('adjust-sheet').addEventListener('click', e => e.stopPropagation());
 
-  document.getElementById('adj-reps-m').addEventListener('click', () => {
+  document.getElementById('btn-adjust').addEventListener('click', e => { e.stopPropagation(); openSheet(); });
+  document.getElementById('adjust-backdrop').addEventListener('click', e => { e.stopPropagation(); closeSheet(); });
+  document.getElementById('adj-cancel').addEventListener('click', e => { e.stopPropagation(); closeSheet(); });
+
+  document.getElementById('adj-reps-m').addEventListener('click', e => {
+    e.stopPropagation();
     SESS._adjReps[SESS.idx] = Math.max(1, SESS._adjReps[SESS.idx] - 1);
     document.getElementById('adj-reps-val').textContent = SESS._adjReps[SESS.idx];
   });
-  document.getElementById('adj-reps-p').addEventListener('click', () => {
+  document.getElementById('adj-reps-p').addEventListener('click', e => {
+    e.stopPropagation();
     SESS._adjReps[SESS.idx] = SESS._adjReps[SESS.idx] + 1;
     document.getElementById('adj-reps-val').textContent = SESS._adjReps[SESS.idx];
   });
-  document.getElementById('adj-w-m').addEventListener('click', () => {
+  document.getElementById('adj-w-m').addEventListener('click', e => {
+    e.stopPropagation();
     SESS._adjWeight[SESS.idx] = Math.max(0, (SESS._adjWeight[SESS.idx] || 0) - 2.5);
     document.getElementById('adj-w-val').textContent = SESS._adjWeight[SESS.idx] || '—';
   });
-  document.getElementById('adj-w-p').addEventListener('click', () => {
+  document.getElementById('adj-w-p').addEventListener('click', e => {
+    e.stopPropagation();
     SESS._adjWeight[SESS.idx] = (SESS._adjWeight[SESS.idx] || 0) + 2.5;
     document.getElementById('adj-w-val').textContent = SESS._adjWeight[SESS.idx];
   });
-  document.getElementById('adj-save').addEventListener('click', () => {
+  document.getElementById('adj-save').addEventListener('click', e => {
+    e.stopPropagation();
     closeSheet();
-    // Re-render with updated values
     renderExo(s, badge);
   });
 
@@ -4051,6 +4075,16 @@ function _pbBuildWeeks(body) {
 // ══════════════════════════════════════════════════════════════════════
 
 // Calcule la durée théorique d'une séance en minutes
+// Zone d'intensité selon le % du 1RM
+function _getZone(pct) {
+  if (pct < 60) return ['Récupération active','var(--blue)'];
+  if (pct < 67) return ['Endurance musculaire','var(--green)'];
+  if (pct < 76) return ['Prise de masse · Hypertrophie','var(--amber)'];
+  if (pct < 85) return ['Force · Hypertrophie','var(--accent)'];
+  if (pct < 93) return ['Force maximale','#ff6b6b'];
+  return ['Force absolue · 1RM','#ff4040'];
+}
+
 function _pbCalcDuration(exos) {
   if (!exos.length) return 30;
   let total = 0;
@@ -4243,19 +4277,260 @@ function _pbWeightFromPct(exoName, pct, reps) {
 
 // Prescription IA — calcule sets, reps, poids, repos pour un exercice
 // Tables de prescription par objectif — basées sur les principes de périodisation
-const AI_PARAMS = {
-  'hypertrophie':    { sets:4, repsMin:8,  repsMax:12, pct:70, rest:90,  progression:2.5,  intent:'Hypertrophie',         repsLabel:'8-12' },
-  'prise de masse':  { sets:4, repsMin:8,  repsMax:12, pct:70, rest:90,  progression:2.5,  intent:'Hypertrophie',         repsLabel:'8-12' },
-  'force':           { sets:5, repsMin:3,  repsMax:6,  pct:82, rest:180, progression:2.5,  intent:'Force',               repsLabel:'3-6'  },
-  'force maximale':  { sets:5, repsMin:1,  repsMax:5,  pct:90, rest:240, progression:2.5,  intent:'Force max',           repsLabel:'1-5'  },
-  'endurance':       { sets:3, repsMin:15, repsMax:20, pct:55, rest:45,  progression:0,    intent:'Endurance musculaire', repsLabel:'15-20'},
-  'perte de poids':  { sets:3, repsMin:12, repsMax:15, pct:60, rest:60,  progression:0,    intent:'Circuit',             repsLabel:'12-15'},
-  'hiit':            { sets:3, repsMin:10, repsMax:15, pct:65, rest:30,  progression:0,    intent:'HIIT',                repsLabel:'10-15'},
-  'cardio':          { sets:3, repsMin:15, repsMax:20, pct:55, rest:45,  progression:0,    intent:'Cardio-muscu',        repsLabel:'15-20'},
-  'avancé':          { sets:5, repsMin:5,  repsMax:8,  pct:80, rest:150, progression:5,    intent:'Force/Hypertrophie',  repsLabel:'5-8'  },
-  'mobilité':        { sets:3, repsMin:12, repsMax:15, pct:50, rest:60,  progression:0,    intent:'Mobilité',            repsLabel:'12-15'},
-  'crossfit':        { sets:4, repsMin:10, repsMax:15, pct:65, rest:60,  progression:2.5,  intent:'CrossFit',            repsLabel:'10-15'},
+// ══════════════════════════════════════════════════════════════════════
+// PROTOCOLES SCIENTIFIQUES D'ENTRAÎNEMENT
+// Chaque objectif dispose de plusieurs protocoles selon le niveau
+// ══════════════════════════════════════════════════════════════════════
+
+// ── PRILEPIN'S CHART (force soviétique)
+// Zone %1RM → nombre de reps optimal par séance et par série
+const PRILEPIN = [
+  { min:55, max:65, optRepsPerSet:[3,6],  optTotalReps:[24,36], name:'Volume de base' },
+  { min:65, max:70, optRepsPerSet:[3,6],  optTotalReps:[18,30], name:'Développement' },
+  { min:70, max:80, optRepsPerSet:[3,6],  optTotalReps:[12,24], name:'Accumulation' },
+  { min:80, max:90, optRepsPerSet:[2,4],  optTotalReps:[10,20], name:'Intensification' },
+  { min:90, max:100,optRepsPerSet:[1,3],  optTotalReps:[4,10],  name:'Pic de force' },
+];
+
+function prilepinZone(pct) {
+  return PRILEPIN.find(z => pct >= z.min && pct < z.max) || PRILEPIN[2];
+}
+
+// ── SCHOENFELD (hypertrophie scientifique, Brad Schoenfeld 2010-2022)
+// Tension mécanique + stress métabolique + dommages musculaires
+const SCHOENFELD_TECHNIQUES = {
+  'standard':    { name:'Standard',       sets:4, repsMin:8, repsMax:12, pct:70, rest:90  },
+  'dropset':     { name:'Drop set',       sets:3, repsMin:8, repsMax:15, pct:70, rest:60, dropSets:2, dropPct:0.80 },
+  'rest_pause':  { name:'Rest-pause',     sets:3, repsMin:8, repsMax:12, pct:70, rest:15, restPauseRounds:3 },
+  'mechanical':  { name:'Mécanique',      sets:4, repsMin:6, repsMax:12, pct:75, rest:75  },
 };
+
+// ── COGGAN/ALLEN (zones cardio — 7 niveaux puissance/FC)
+const COGGAN_ZONES = [
+  { z:1, name:'Récupération active',     pctFTP:[0,55],   pctFCmax:[0,68],   rpe:[1,2],  desc:'Pédalage très léger, récup post-séance' },
+  { z:2, name:'Endurance de base',       pctFTP:[56,75],  pctFCmax:[69,83],  rpe:[2,4],  desc:'Conversation possible, brûle les graisses' },
+  { z:3, name:'Tempo',                   pctFTP:[76,90],  pctFCmax:[84,94],  rpe:[4,6],  desc:'Inconfortable, phrases courtes' },
+  { z:4, name:'Seuil lactique',          pctFTP:[91,105], pctFCmax:[95,105], rpe:[6,8],  desc:'Limite de la parole, 20-60 min max' },
+  { z:5, name:'VO2max',                  pctFTP:[106,120],pctFCmax:[106,120],rpe:[8,9],  desc:'Intervalles 3-8 min, très intense' },
+  { z:6, name:'Capacité anaérobie',      pctFTP:[121,150],pctFCmax:[120,130],rpe:[9,10], desc:'Sprints 30s-2min, max effort' },
+  { z:7, name:'Sprint neuromuscular',    pctFTP:[151,999],pctFCmax:[130,200],rpe:[10,10],desc:'5-15 sec, purement neuromusculaire' },
+];
+
+// ── FRC (Functional Range Conditioning — Andreo Spina)
+// Progressions articulaires pour mobilité/handstand/L-sit
+const FRC_PROGRESSIONS = {
+  'handstand': [
+    { name:'PAILs/RAILs épaules',    reps:'60s tenu', desc:'Flexion épaule 180°, isométriques finaux de range' },
+    { name:'Pike push-up',           reps:'3×8',       desc:'Épaules dans le plan, gainage actif' },
+    { name:'Wall handstand',         reps:'3×30s',     desc:'Kick-up au mur, alignement oreilles-bras' },
+    { name:'Handstand libre',        reps:'10×5s',     desc:'Équilibre actif, micro-corrections' },
+  ],
+  'l_sit': [
+    { name:'Compression hip flexors',reps:'3×30s',     desc:'Jambes tendues au sol, poussée active' },
+    { name:'Tuck L-sit',            reps:'3×10s',     desc:'Genoux groupés, fesses décollées' },
+    { name:'Single-leg L-sit',      reps:'3×8s',      desc:'Une jambe tendue, alternée' },
+    { name:'Full L-sit',            reps:'3×10s',     desc:'Deux jambes à 90°, dos droit' },
+  ],
+  'squat_mobility': [
+    { name:'90/90 hip mobility',     reps:'2×90s',     desc:'Rotation interne/externe, PAILs/RAILs' },
+    { name:'Deep squat hold',        reps:'3×60s',     desc:'Talons au sol, dos droit' },
+    { name:'ATG split squat',        reps:'3×8',       desc:'Full range genou-sol, mollet contre sol' },
+  ],
+};
+
+// ── WESTSIDE CONJUGATE (Louie Simmons — force avancée)
+// Méthode max effort + dynamique + assistance
+const WESTSIDE = {
+  maxEffort:  { sets:5, repsMin:1, repsMax:3, pct:90, rest:300, prog:'Monter à un nouveau max sur 5 semaines' },
+  dynamic:    { sets:8, repsMin:2, repsMax:3, pct:55, rest:60,  prog:'Vitesse maximale, explosivité' },
+  assistance: { sets:4, repsMin:8, repsMax:12,pct:65, rest:90,  prog:'Renforcement points faibles' },
+};
+
+// ── TABLE PRINCIPALE AI_PARAMS — enrichie des protocoles
+const AI_PARAMS = {
+  // ── HYPERTROPHIE (Schoenfeld Standard)
+  'hypertrophie': {
+    protocol:'Schoenfeld',
+    sets:4, repsMin:8, repsMax:12, pct:70, rest:90, progression:2.5,
+    intent:'Hypertrophie', repsLabel:'8-12',
+    notes:'Tension mécanique + stress métabolique. 48-72h entre séances du même groupe.',
+    deloadPct:0.60, deloadFreq:4,
+    techniqueWeek:{ 4: 'dropset', 8: 'rest_pause', 12: 'mechanical' },
+  },
+  'prise de masse': {
+    protocol:'Schoenfeld+Prilepin',
+    sets:4, repsMin:8, repsMax:12, pct:70, rest:90, progression:2.5,
+    intent:'Hypertrophie', repsLabel:'8-12',
+    notes:'Volume progressif. Prilepin zone 70-80% = 12-24 reps totales par exo.',
+    deloadPct:0.60, deloadFreq:4,
+  },
+
+  // ── FORCE (Prilepin intensification)
+  'force': {
+    protocol:'Prilepin',
+    sets:5, repsMin:3, repsMax:5, pct:82, rest:180, progression:2.5,
+    intent:'Force', repsLabel:'3-5',
+    notes:'Zone Prilepin 80-90% : 10-20 reps totales. Pyramide montante.',
+    deloadPct:0.60, deloadFreq:3,
+    pyramid:true,
+  },
+  'force maximale': {
+    protocol:'Prilepin + Westside Max Effort',
+    sets:5, repsMin:1, repsMax:3, pct:90, rest:300, progression:2.5,
+    intent:'Force max', repsLabel:'1-3',
+    notes:'Zone Prilepin 90%+ : 4-10 reps totales. Nouveau max toutes les 3-4 semaines.',
+    deloadPct:0.50, deloadFreq:3,
+    pyramid:true,
+  },
+  'avancé': {
+    protocol:'Westside Conjugate',
+    sets:5, repsMin:3, repsMax:5, pct:80, rest:180, progression:5,
+    intent:'Force/Hypertrophie', repsLabel:'3-5',
+    notes:'Méthode conjuguée : alternance max effort / dynamique / assistance.',
+    deloadPct:0.65, deloadFreq:4,
+    pyramid:true,
+  },
+
+  // ── ENDURANCE (Coggan Zone 2-3)
+  'endurance': {
+    protocol:'Coggan Zone 2',
+    sets:3, repsMin:15, repsMax:20, pct:55, rest:45, progression:0,
+    intent:'Endurance musculaire', repsLabel:'15-20',
+    notes:'Zone 2 Coggan (56-75% FTP). Brûle graisses, développe mitochondries.',
+    cardioZone: 2, deloadPct:0.70, deloadFreq:5,
+  },
+  'cardio': {
+    protocol:'Coggan Zone 2-3',
+    sets:3, repsMin:15, repsMax:20, pct:55, rest:45, progression:0,
+    intent:'Cardio-muscu', repsLabel:'15-20',
+    notes:'Travail aérobie tempo. Zone 3 Coggan pour les blocs musculaires.',
+    cardioZone: 3, deloadPct:0.70, deloadFreq:5,
+  },
+
+  // ── PERTE DE POIDS / HIIT (Schoenfeld métabolique)
+  'perte de poids': {
+    protocol:'Schoenfeld Métabolique',
+    sets:3, repsMin:12, repsMax:15, pct:60, rest:60, progression:0,
+    intent:'Circuit métabolique', repsLabel:'12-15',
+    notes:'EPOC élevé. Repos courts = stress métabolique maximal. Coggan Z3-Z4 pour cardio.',
+    cardioZone: 4, deloadPct:0.65, deloadFreq:4,
+  },
+  'hiit': {
+    protocol:'Coggan Zone 5-6 + Tabata',
+    sets:3, repsMin:10, repsMax:15, pct:65, rest:30, progression:0,
+    intent:'HIIT', repsLabel:'10-15',
+    notes:'Zone 5-6 Coggan sur les blocs cardio. 20s travail / 10s repos (Tabata) ou 30/30.',
+    cardioZone: 6, deloadPct:0.60, deloadFreq:3,
+  },
+
+  // ── MOBILITÉ (FRC)
+  'mobilité': {
+    protocol:'FRC (Functional Range Conditioning)',
+    sets:3, repsMin:8, repsMax:12, pct:50, rest:90, progression:0,
+    intent:'Mobilité articulaire', repsLabel:'8-12',
+    notes:'PAILs/RAILs en fin de range. Isométriques progressifs. 60-90s de tenu.',
+    deloadPct:0.80, deloadFreq:6,
+  },
+
+  // ── CROSSFIT
+  'crossfit': {
+    protocol:'CrossFit (Glassman)',
+    sets:4, repsMin:10, repsMax:15, pct:65, rest:60, progression:2.5,
+    intent:'CrossFit', repsLabel:'10-15',
+    notes:'Fonctionnel, varié, haute intensité. Westside dynamique pour les mouvements olympiques.',
+    cardioZone: 5, deloadPct:0.65, deloadFreq:4,
+  },
+};
+
+// ══════════════════════════════════════════════════════════════════════
+// PRESCRIPTION IA MULTI-PROTOCOLES
+// Génère les séries en fonction du protocole scientifique de l'objectif
+// ══════════════════════════════════════════════════════════════════════
+function _pbAIPrescribe(exoName, objective, weekIdx, allExos = []) {
+  const rms     = DB.get('rms', {});
+  const sessions = DB.get('sessions', []);
+  const rm1     = rms[exoName]?.length ? Math.max(...rms[exoName].map(r => r.v)) : null;
+
+  // Historique récent
+  const lastSets   = sessions.flatMap(s => (s.sets||[]).filter(x => x.exo === exoName)).slice(-10);
+  const avgWeight  = lastSets.length ? lastSets.reduce((a,b) => a+(b.w||0),0)/lastSets.length : null;
+
+  // Paramètres du protocole
+  const p = AI_PARAMS[objective] || AI_PARAMS['prise de masse'];
+
+  // ── Semaine de déload automatique
+  const deloadFreq = p.deloadFreq || 4;
+  const isDeload   = weekIdx > 0 && weekIdx % deloadFreq === (deloadFreq - 1);
+  const deloadMult = isDeload ? (p.deloadPct || 0.60) : 1.0;
+
+  // ── Prilepin : vérifier que le volume prescrit est dans la plage optimale
+  const priZone    = prilepinZone(p.pct);
+  const optReps    = Math.floor((priZone.optRepsPerSet[0] + priZone.optRepsPerSet[1]) / 2);
+  const targetReps = Math.min(p.repsMax, Math.max(p.repsMin, optReps));
+
+  // ── Progression : linéaire sauf déload
+  const progression = isDeload ? 0 : (weekIdx > 0 ? weekIdx * p.progression : 0);
+
+  // ── Fatigue intra-séance
+  const fatigueFactor = allExos.length > 1 ? _pbFatigueFactor(exoName, allExos) : 1.0;
+  const effectivePct  = Math.round(p.pct * fatigueFactor * deloadMult);
+
+  // ── Calcul du poids
+  let prescribedWeight = null;
+  let prescribedPct    = effectivePct;
+  if (rm1) {
+    prescribedWeight = Math.round((_pbWeightFromPct(exoName, effectivePct, targetReps) + progression) / 2.5) * 2.5;
+  } else if (avgWeight) {
+    prescribedWeight = Math.round((avgWeight * (effectivePct / 70) + progression) / 2.5) * 2.5;
+  } else {
+    const est = getDefaultWeightWithSource(exoName);
+    if (est?.weight > 0) prescribedWeight = Math.round(est.weight * deloadMult / 2.5) * 2.5;
+  }
+
+  // ── Génération des séries selon le protocole
+  const isPyramid  = p.pyramid || p.pct >= 80;
+  const actualSets = isDeload ? Math.max(2, Math.floor(p.sets * 0.7)) : p.sets;
+
+  const sets = Array.from({ length: actualSets }, (_, i) => {
+    // Pyramide montante pour force/Prilepin
+    const repsVar = isPyramid
+      ? Math.max(p.repsMin, targetReps - i)
+      : targetReps;
+    const pctVar  = isPyramid
+      ? Math.min(100, effectivePct + i * 2)
+      : effectivePct;
+    const wVar    = rm1 && isPyramid
+      ? Math.round((_pbWeightFromPct(exoName, pctVar, repsVar) + progression) / 2.5) * 2.5
+      : prescribedWeight;
+
+    // Repos : dernière série = repos + 30s (récup complète)
+    const restVar = i === actualSets - 1 ? p.rest + 30 : p.rest;
+
+    return { reps: repsVar, weight: wVar, pct: pctVar, rest: restVar };
+  });
+
+  // ── Notes affichage
+  const fatigueNote  = fatigueFactor < 0.95 ? Math.round((1-fatigueFactor)*100)+'% réduit (fatigue)' : null;
+  const deloadNote   = isDeload ? 'Semaine de déload — '+(Math.round(deloadMult*100))+'% du volume' : null;
+  const weightSource = (!rm1 && !avgWeight) ? getDefaultWeightWithSource(exoName) : null;
+  const priNote      = `Prilepin ${priZone.name} · ${priZone.optTotalReps[0]}-${priZone.optTotalReps[1]} reps totales`;
+
+  return {
+    sets,
+    s: actualSets + '×' + (isPyramid ? p.repsMin+'-'+targetReps : String(targetReps)),
+    restPerSet: p.rest,
+    pct: prescribedPct,
+    prescribedWeight,
+    intent: isDeload ? 'Déload · ' + p.intent : p.intent,
+    protocol: p.protocol,
+    priNote,
+    fatigueNote: fatigueNote || deloadNote,
+    weightSource: weightSource?.source || null,
+    weightNote: weightSource?.note || null,
+    aiGenerated: true,
+    mode: 'ai',
+  };
+}
 
 // Exercices recommandés par objectif — proposés activement si absents de la séance
 const AI_EXO_SUGGEST = {
@@ -4328,83 +4603,6 @@ function _pbFatigueFactor(exoName, allExos) {
   return 1 - reduction;
 }
 
-function _pbAIPrescribe(exoName, objective, weekIdx, allExos = []) {
-  const rms = DB.get('rms', {});
-  const sessions = DB.get('sessions', []);
-  const hasRM = rms[exoName]?.length > 0;
-  const rm1 = hasRM ? Math.max(...rms[exoName].map(r => r.v)) : null;
-
-  // Historique de l'exercice
-  const lastSets = sessions.flatMap(s => (s.sets||[]).filter(x => x.exo === exoName)).slice(-10);
-  const avgWeight = lastSets.length ? lastSets.reduce((a,b) => a+(b.w||0), 0)/lastSets.length : null;
-  const avgReps   = lastSets.length ? Math.round(lastSets.reduce((a,b) => a+(b.r||0), 0)/lastSets.length) : null;
-
-  // Choisir les paramètres selon l'objectif (fallback prise de masse)
-  const p = AI_PARAMS[objective] || AI_PARAMS['prise de masse'];
-
-  // Reps au centre de la plage
-  const targetReps = Math.round((p.repsMin + p.repsMax) / 2);
-
-  // Progression linéaire par semaine
-  const progression = weekIdx > 0 ? weekIdx * p.progression : 0;
-
-  // Facteur de fatigue selon le contexte de la séance (exos avant/après)
-  const fatigueFactor = allExos.length > 1 ? _pbFatigueFactor(exoName, allExos) : 1.0;
-  const effectivePct = Math.round(p.pct * fatigueFactor);
-
-  // Calculer le poids prescrit
-  let prescribedWeight = null;
-  let prescribedPct = effectivePct;
-  if (rm1) {
-    prescribedWeight = Math.round((_pbWeightFromPct(exoName, effectivePct, targetReps) + progression) / 2.5) * 2.5;
-  } else if (avgWeight) {
-    prescribedWeight = Math.round((avgWeight * (effectivePct / 70) + progression) / 2.5) * 2.5;
-  } else {
-    // Estimation depuis un exercice connu du même groupe musculaire
-    const estimated = getDefaultWeightWithSource(exoName);
-    if (estimated?.weight > 0) {
-      prescribedWeight = estimated.weight;
-    }
-  }
-
-  // Note de fatigue + source pour affichage badge
-  const fatigueNote = fatigueFactor < 0.95 ? Math.round((1 - fatigueFactor) * 100) + '% réduit (fatigue)' : null;
-  const weightSource = (!rm1 && !avgWeight) ? getDefaultWeightWithSource(exoName) : null;
-
-  // Générer les sets avec variation pyramidale légère pour force, constante pour hypertrophie
-  const isStrength = p.pct >= 80;
-  const sets = Array.from({ length: p.sets }, (_, i) => {
-    const repsVar = isStrength
-      ? Math.max(p.repsMin, targetReps - i)              // pyramide descendante pour force
-      : targetReps;                                        // constant pour hypertrophie/endurance
-    const pctVar = isStrength
-      ? Math.min(100, prescribedPct + i * 2)             // charges croissantes pour force
-      : prescribedPct;
-    const wVar = rm1 && isStrength
-      ? Math.round((_pbWeightFromPct(exoName, pctVar, repsVar) + progression) / 2.5) * 2.5
-      : prescribedWeight;
-    return {
-      reps: repsVar,
-      weight: wVar,
-      pct: pctVar,
-      rest: i === p.sets - 1 ? p.rest + 30 : p.rest,   // dernière série : repos +30s
-    };
-  });
-
-  return {
-    sets,
-    s: p.sets + '×' + p.repsLabel,
-    restPerSet: p.rest,
-    pct: prescribedPct,
-    prescribedWeight,
-    intent: p.intent,
-    fatigueNote,
-    weightSource: weightSource?.source || null,
-    weightNote: weightSource?.note || null,
-    aiGenerated: true,
-    mode: 'ai',
-  };
-}
 
 // Suggestion active d'exercices manquants pour l'objectif
 function _pbSuggestMissingExos(day, objective) {
@@ -4600,8 +4798,7 @@ function _pbDayEditor(card, day, di) {
 
       // Badge IA + note de fatigue + source du poids si prescrit
       if (exo.aiGenerated) {
-        let aiLabel = '✦ IA';
-        if (exo.fatigueNote) aiLabel += ' · ' + exo.fatigueNote;
+        let aiLabel = '✦ ' + (exo.protocol ? exo.protocol.split(' ')[0] : 'IA');
         const aiBadge = _pbEl('span', { style:'font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border-radius:2px;background:rgba(232,25,44,0.1);color:var(--accent);border:1px solid rgba(232,25,44,0.3)' }, aiLabel);
         exoTop.appendChild(aiBadge);
         // Source du poids estimé
@@ -4735,15 +4932,7 @@ function _pbDayEditor(card, day, di) {
         const gradRow = _pbEl('div', { style:'display:flex;justify-content:space-between;font-family:Barlow Condensed,sans-serif;font-size:9px;color:var(--wm);margin-top:-4px;margin-bottom:4px' });
         ['40%','55%','70%','85%','100%'].forEach(v => gradRow.appendChild(_pbEl('span',{},v)));
         pctBlock.appendChild(gradRow);
-        // Zone d'intensité — dynamique selon slider
-        function _getZone(pct) {
-          if (pct < 60) return ['Récupération active','var(--blue)'];
-          if (pct < 67) return ['Endurance musculaire','var(--green)'];
-          if (pct < 76) return ['Prise de masse · Hypertrophie','var(--amber)'];
-          if (pct < 85) return ['Force · Hypertrophie','var(--accent)'];
-          if (pct < 93) return ['Force maximale','#ff6b6b'];
-          return ['Force absolue · 1RM','#ff4040'];
-        }
+        // Zone d'intensité — dynamique selon slider (fonction globale)
         let [zoneLbl0, zoneCol0] = _getZone(parseInt(exo.pct||75));
         const zoneBadge = _pbEl('div', { style:'display:inline-block;font-family:Barlow Condensed,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:3px 10px;border-radius:2px;border:1px solid '+zoneCol0+';color:'+zoneCol0+';background:'+zoneCol0+'22;transition:all 0.2s' }, zoneLbl0);
         // Brancher la mise à jour du badge sur le slider (déjà défini plus haut)
@@ -5989,7 +6178,10 @@ Retourne UNIQUEMENT un bloc <prog>...</prog> contenant ce JSON exact :
 RÈGLES :
 - Types de jour : "muscle", "hiit", "cardio", "z2", "rest"
 - Ne mets JAMAIS échauffement/retour au calme dans exos — utilise card et tip
-- Adapte le volume au niveau (débutant: 2-3 séries, intermédiaire: 3-4, avancé: 4-5)
+- Adapte le volume au niveau avec les protocoles : débutant → Schoenfeld Standard (4×8-12, 70%), intermédiaire → Prilepin accumulation (5×3-5, 80%), avancé → Westside conjugué
+- Pour cardio/endurance : utilise les zones Coggan (Z2=56-75% FCmax pour endurance, Z5-Z6 pour HIIT)
+- Pour force : pyramide montante (55% → 70% → 82% → 90%), Prilepin total reps 10-20
+- Intègre une semaine de déload automatique toutes les 4 semaines (60% volume)
 - Équilibre poussée/tirage/jambes
 - Respecte les contraintes physiques
 - Réponds UNIQUEMENT avec le bloc <prog>...</prog>, rien d'autre`;
@@ -6422,13 +6614,10 @@ function _renderExoLibrary(overlay) {
   addBtn.onclick = () => _openExoForm(overlay, null, -1);
   content.appendChild(addBtn);
 
-  if (!customExos.length) {
-    const empty = _pbEl('div', { style:'text-align:center;padding:40px 20px;color:var(--wm)' });
-    empty.appendChild(_pbEl('div', { style:'font-size:40px;margin-bottom:12px' }, '📚'));
-    empty.appendChild(_pbEl('div', { style:'font-size:14px' }, 'Aucun exercice dans ta bibliothèque.'));
-    empty.appendChild(_pbEl('div', { style:'font-size:12px;margin-top:6px;color:var(--wm)' }, 'Ajoute des exercices avec vidéo et description personnalisée.'));
-    content.appendChild(empty);
-  } else {
+  // Afficher d'abord les fiches custom
+  if (customExos.length) {
+    const customTitle = _pbEl('div', { style:'font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:10px' }, '✎ MES FICHES PERSONNALISÉES');
+    content.appendChild(customTitle);
     customExos.forEach((exo, i) => {
       const card = _pbEl('div', { style:'background:var(--black3);border:1px solid var(--g1);border-radius:8px;overflow:hidden;margin-bottom:12px' });
 
@@ -6480,6 +6669,26 @@ function _renderExoLibrary(overlay) {
       content.appendChild(card);
     });
   }
+
+  // Afficher aussi tous les exercices natifs de l'app
+  const nativeTitle = _pbEl('div', { style:'font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--wm);margin-top:20px;margin-bottom:10px' }, "EXERCICES DE L'APP");
+  content.appendChild(nativeTitle);
+
+  const customNames = customExos.map(e => e.name.toLowerCase());
+  EXS.forEach(exoName => {
+    if (customNames.includes(exoName.toLowerCase())) return; // déjà une fiche custom
+    const row = _pbEl('div', { style:'display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--g1);cursor:pointer' });
+    const nameEl = _pbEl('div', { style:'flex:1' });
+    nameEl.appendChild(_pbEl('div', { style:'font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;color:var(--w)' }, exoName));
+    // Afficher le poids suggéré si disponible
+    const sw = suggestW(exoName, 10);
+    if (sw) nameEl.appendChild(_pbEl('div', { style:'font-size:11px;color:var(--accent);margin-top:2px' }, sw + ' kg · poids suggéré'));
+    const addBtn = _pbEl('button', { style:'font-family:Barlow Condensed,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:5px 10px;border-radius:3px;border:1px solid var(--g1);background:transparent;color:var(--wm);cursor:pointer;white-space:nowrap' }, '+ Fiche');
+    addBtn.onclick = () => _openExoForm(libraryOverlay, { name: exoName }, -1);
+    row.appendChild(nameEl);
+    row.appendChild(addBtn);
+    content.appendChild(row);
+  });
 
   overlay.appendChild(content);
 }
