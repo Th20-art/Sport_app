@@ -921,7 +921,7 @@ function getExoIntentColor(exoName) {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// THÈMES PAR PROGRAMME — couleur d'accent de l'interface
+// THÈMES PAR PROGRAMME — couleur d\'accent de l'interface
 // ══════════════════════════════════════════════════════════════════════
 // Chaque programme peut avoir sa propre couleur principale.
 // Elle remplace --accent et --red dans tout le CSS au moment de l'activation.
@@ -938,6 +938,96 @@ const PROG_KEYWORDS = {
   1: ['prise de masse', 'hiit', 'cardio', 'avancé'],
 };
 
+
+// ══════════════════════════════════════════════════════════════════════
+// SÉANCES SPÉCIALES — Types de journée fun/challengeant
+// ══════════════════════════════════════════════════════════════════════
+const SPECIAL_DAY_TYPES = {
+  '1rm_day': {
+    icon: '🏆', label: '1RM Day', color: '#FFD700',
+    desc: 'Tenter un nouveau record absolu',
+    dur: '50 min',
+    protocol: [
+      { label: 'Activation', reps: '10', pct: 50, note: 'Léger, technique parfaite' },
+      { label: 'Montée 1',   reps: '5',  pct: 70, note: 'Commence à charger' },
+      { label: 'Montée 2',   reps: '3',  pct: 80, note: 'Concentration maximale' },
+      { label: 'Montée 3',   reps: '2',  pct: 87, note: 'Presque au max' },
+      { label: 'Montée 4',   reps: '1',  pct: 93, note: 'Très lourd' },
+      { label: 'MAX 🏆',     reps: '1',  pct: 100, note: 'Ton nouveau record — donne tout', isMax: true },
+    ]
+  },
+  'spider_circuit': {
+    icon: '🕷️', label: 'Spider Circuit', color: '#E8192C',
+    desc: '4 rounds poids de corps — chronométré',
+    dur: '35 min',
+    intro: 'Tu poursuis le Bouffon Vert à travers Manhattan. Pas de temps à perdre.',
+    exos: [
+      { n: 'Push-ups',         reps: 10, note: 'Gainage actif' },
+      { n: 'Pull-ups',         reps: 8,  note: 'Menton au-dessus' },
+      { n: 'Dips',             reps: 10, note: 'Amplitude complète' },
+      { n: 'Jump squats',      reps: 15, note: 'Explosion maximale' },
+      { n: 'Mountain climbers',reps: 20, note: 'Rythme rapide' },
+      { n: 'Burpees',          reps: 5,  note: 'Finition intense' },
+    ],
+    rounds: 4, restBetweenRounds: 90,
+  },
+  'deck_of_cards': {
+    icon: '🃏', label: 'Deck of Cards', color: '#4A90E2',
+    desc: '52 cartes — exo selon la couleur, reps selon la valeur',
+    dur: '40 min',
+    intro: "Pioche une carte. Fais les reps. Pas de repos programmé — récup au feeling.",
+    suits: {
+      '♠': { exo: 'Push-ups',         name: 'Piques' },
+      '♥': { exo: 'Goblet squat',     name: 'Coeurs' },
+      '♦': { exo: 'Mountain climbers',name: 'Carreaux' },
+      '♣': { exo: 'Burpees',          name: 'Trèfles' },
+    },
+    faceValues: { 'J': 11, 'Q': 12, 'K': 13, 'A': 14 },
+  },
+  'max_reps': {
+    icon: '📈', label: 'Max Reps Challenge', color: '#00C97B',
+    desc: "3 exos clés — 1 série à 70% jusqu'au max",
+    dur: '30 min',
+    intro: 'Une seule série par exercice. Tout ce que tu as. Score sauvegardé.',
+    pct: 70,
+  },
+  'benchmark': {
+    icon: '🎯', label: 'Benchmark WOD', color: '#FF6B35',
+    desc: 'Séance de référence mensuelle — même exercices, même ordre',
+    dur: '45 min',
+    intro: "Même séance qu'il y a 4 semaines. Tu es plus fort qu'avant ?",
+    exos: [
+      { n: 'Deadlift',     sets: 5, reps: 5, pct: 80 },
+      { n: 'Pull-ups',     sets: 1, reps: 'MAX', isAmrap: true },
+      { n: 'Barbell squat',sets: 5, reps: 5, pct: 75 },
+      { n: 'Push-ups',     sets: 1, reps: 'MAX', isAmrap: true },
+    ],
+  },
+};
+
+// Fréquence d'insertion des séances spéciales (en semaines)
+const SPECIAL_FREQ = {
+  '1rm_day':       5, // toutes les 5 semaines
+  'spider_circuit':2, // toutes les 2 semaines
+  'deck_of_cards': 4, // toutes les 4 semaines
+  'max_reps':      3, // toutes les 3 semaines
+  'benchmark':     4, // toutes les 4 semaines
+};
+
+// Presets couleurs Spider-Man universe
+const COLOR_PRESETS = [
+  { name: 'Spider-Man',   hex: '#E8192C', icon: '🕷️' },
+  { name: 'Miles Morales',hex: '#7B0FFF', icon: '🕸️' },
+  { name: 'Spider-Gwen',  hex: '#FF69B4', icon: '🩷' },
+  { name: 'Venom',        hex: '#1A1A2E', icon: '🖤' },
+  { name: 'Iron Spider',  hex: '#C0392B', icon: '🤖' },
+  { name: 'Ghost Spider', hex: '#FFFFFF', icon: '👻' },
+  { name: 'Electro',      hex: '#00CFFF', icon: '⚡' },
+  { name: 'Scorpion',     hex: '#2ECC71', icon: '🦂' },
+  { name: 'Sandman',      hex: '#F39C12', icon: '🏖️' },
+  { name: 'Doc Ock',      hex: '#E74C3C', icon: '🐙' },
+];
+
 const PROG_THEMES = {
   0: {
     accent: '#E8192C',
@@ -947,7 +1037,7 @@ const PROG_THEMES = {
     name: 'Spider-Man Body'
   },
   1: {
-    accent: '#7B0FFF',        // violet venin
+    accent: '#7B0FFF',
     glow: 'rgba(123,15,255,0.3)',
     heroBg: 'linear-gradient(160deg, #0a0a0a 0%, #0d0516 60%, #130820 100%)',
     webColor: '#7B0FFF',
@@ -955,7 +1045,112 @@ const PROG_THEMES = {
   }
 };
 
+// Générer un thème depuis une couleur hex
+function _colorToTheme(hex, name) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  const isDark = (r*0.299 + g*0.587 + b*0.114) < 180;
+  const glow = 'rgba('+r+','+g+','+b+',0.28)';
+  // Fond sombre teinté de la couleur
+  const rh = Math.round(r*0.06).toString(16).padStart(2,'0');
+  const gh = Math.round(g*0.06).toString(16).padStart(2,'0');
+  const bh = Math.round(b*0.06).toString(16).padStart(2,'0');
+  const heroBg = 'linear-gradient(160deg, #0a0a0a 0%, #0d0d0d 50%, #'+rh+gh+bh+' 100%)';
+  return { accent: hex, glow, heroBg, webColor: hex, name: name || 'Programme' };
+}
+
+
+// ── Sélecteur de thème couleur pour un programme custom
+function openThemePicker(ci, parentSheet) {
+  const progs = DB.get('customProgs', []);
+  const prog = progs[ci];
+  if (!prog) return;
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:600;display:flex;flex-direction:column;justify-content:flex-end';
+
+  const backdrop = document.createElement('div');
+  backdrop.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.7)';
+  backdrop.onclick = () => overlay.remove();
+
+  const sheet = document.createElement('div');
+  sheet.style.cssText = 'position:relative;background:var(--black2);border-radius:16px 16px 0 0;border-top:2px solid var(--g1);padding:24px 20px calc(24px + var(--sb));z-index:1';
+
+  sheet.innerHTML = '<div style="width:36px;height:3px;background:var(--g1);border-radius:2px;margin:0 auto 20px"></div>' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:var(--w);margin-bottom:4px">Thème couleur</div>' +
+    '<div style="font-size:12px;color:var(--wm);margin-bottom:20px">' + (prog.name || 'Programme') + ' — choisir une couleur d\'accent</div>';
+
+  // Grille de presets
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px';
+
+  COLOR_PRESETS.forEach(preset => {
+    const btn = document.createElement('button');
+    const isCurrent = (prog.color || '#E8192C').toLowerCase() === preset.hex.toLowerCase();
+    btn.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border-radius:8px;border:2px solid ' + (isCurrent ? 'var(--w)' : 'transparent') + ';background:var(--black3);cursor:pointer;transition:border-color 0.15s';
+    btn.innerHTML = '<div style="width:28px;height:28px;border-radius:50%;background:' + preset.hex + ';box-shadow:0 0 8px ' + preset.hex + '44"></div>' +
+      '<div style="font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.04em;color:var(--wm);text-align:center;line-height:1.2">' + preset.name + '</div>';
+    btn.onclick = () => {
+      progs[ci].color = preset.hex;
+      DB.set('customProgs', progs);
+      _applyProgColor(preset.hex, prog.name);
+      overlay.remove();
+      showToast('Thème ' + preset.name + ' appliqué', preset.hex);
+    };
+    grid.appendChild(btn);
+  });
+  sheet.appendChild(grid);
+
+  // Color picker libre
+  const customRow = document.createElement('div');
+  customRow.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--black3);border-radius:8px;border:1px solid var(--g1)';
+  const cpLabel = document.createElement('div');
+  cpLabel.style.cssText = 'flex:1;font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;color:var(--w)';
+  cpLabel.textContent = 'Couleur personnalisée';
+  const cp = document.createElement('input');
+  cp.type = 'color';
+  cp.value = prog.color || '#E8192C';
+  cp.style.cssText = 'width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;background:transparent;padding:0';
+  cp.addEventListener('input', () => {
+    progs[ci].color = cp.value;
+    DB.set('customProgs', progs);
+    _applyProgColor(cp.value, prog.name);
+  });
+  cp.addEventListener('click', e => e.stopPropagation());
+  customRow.appendChild(cpLabel);
+  customRow.appendChild(cp);
+  sheet.appendChild(customRow);
+
+  overlay.appendChild(backdrop);
+  overlay.appendChild(sheet);
+  document.body.appendChild(overlay);
+}
+
+// Applique le thème d'un programme custom (depuis sa couleur sauvegardée)
+function _applyProgColor(color, name) {
+  if (!color) return;
+  const theme = _colorToTheme(color, name);
+  const root = document.documentElement;
+  root.style.setProperty('--accent', theme.accent);
+  root.style.setProperty('--red', theme.accent);
+  root.style.setProperty('--theme-glow', theme.glow);
+  root.style.setProperty('--theme-hero-bg', theme.heroBg);
+  root.style.setProperty('--theme-web', theme.webColor);
+  DB.set('themeAccent', theme.accent);
+}
+
 function _applyTheme(progIdx) {
+  // Programmes custom (index 2+) : utiliser leur couleur propre
+  if (progIdx >= 2) {
+    const progs = DB.get('customProgs', []);
+    const prog = progs[progIdx - 2];
+    if (prog?.color) {
+      _applyProgColor(prog.color, prog.name);
+      DB.set('themeIdx', progIdx);
+      return;
+    }
+  }
   const theme = PROG_THEMES[progIdx] || PROG_THEMES[0];
   const root = document.documentElement;
   root.style.setProperty('--accent', theme.accent);
@@ -975,10 +1170,18 @@ function _applyTheme(progIdx) {
     const root = document.documentElement;
     root.style.setProperty('--accent', saved);
     root.style.setProperty('--red', saved);
-    const theme = PROG_THEMES[idx] || PROG_THEMES[0];
-    root.style.setProperty('--theme-glow', theme.glow);
-    root.style.setProperty('--theme-hero-bg', theme.heroBg);
-    root.style.setProperty('--theme-web', theme.webColor);
+    // Programmes custom : générer le glow/bg depuis la couleur
+    if (idx >= 2) {
+      const theme = _colorToTheme(saved);
+      root.style.setProperty('--theme-glow', theme.glow);
+      root.style.setProperty('--theme-hero-bg', theme.heroBg);
+      root.style.setProperty('--theme-web', theme.webColor);
+    } else {
+      const theme = PROG_THEMES[idx] || PROG_THEMES[0];
+      root.style.setProperty('--theme-glow', theme.glow);
+      root.style.setProperty('--theme-hero-bg', theme.heroBg);
+      root.style.setProperty('--theme-web', theme.webColor);
+    }
   }
 })();
 
@@ -1164,7 +1367,6 @@ const P1 = [
       ]
     }],
     exos:[{n:"Burpees",s:"4×40",m:"Full body",note:"40s"},{n:"Jump squats",s:"4×40",m:"Quadriceps",note:"40s"},{n:"Mountain climbers",s:"4×30",m:"Core",note:"30s"},{n:"Kettlebell swings",s:"4×30",m:"Ischio / épaules",note:"30s"}],
-    hiit:[{p:"Échauffement",d:"5 min",c:"warm",i:"Marche rapide → jogging"},{p:"Bloc 1 — 4 rounds",d:"16 min",c:"work",i:"40s effort / 20s repos"},{p:"Récup",d:"2 min",c:"warm",i:"Marche lente"},{p:"Bloc 2",d:"8 min",c:"work",i:"30s sprint / 30s repos ×8"},{p:"Cool-down",d:"4 min",c:"cool",i:"Étirements"}],
     card:null, tip:"" },
   { l:"Mer", n:"Zone 2", b:"Zone 2", t:"z2", dur:"45 min", rest:0, foc:"Brûlage direct des graisses", exos:[], card:"45 min à 60-65% FCmax.", tip:"" },
   { l:"Jeu", n:"Pull + Ischio", b:"Pull / Hinge", t:"muscle", dur:"55 min", rest:45, foc:"Dos · Biceps · Ischio · Core",
@@ -1189,7 +1391,6 @@ const P1 = [
       ]
     }],
     exos:[{n:"Tuck jumps",s:"4×20",m:"Quadriceps",note:"20s"},{n:"Burpees",s:"4×40",m:"Full body",note:"40s"},{n:"Battle ropes",s:"4×30",m:"Épaules",note:"30s"},{n:"Mountain climbers",s:"4×30",m:"Core",note:"30s"}],
-    hiit:[{p:"Échauffement",d:"5 min",c:"warm",i:"Jogging + mobilité"},{p:"Tabata 4 rounds",d:"16 min",c:"work",i:"20s / 10s repos"},{p:"Récup",d:"2 min",c:"warm",i:"Respiration"},{p:"Sprint finisher",d:"8 min",c:"work",i:"8×(20s/40s)"},{p:"Cool-down",d:"4 min",c:"cool",i:"Étirements"}],
     card:null, tip:"" },
   { l:"Sam", n:"Zone 2 long", b:"Zone 2", t:"z2", dur:"60 min", rest:0, foc:"Cardio long", exos:[], card:"60 min à 60-65% FCmax.", tip:"" },
   { l:"Dim", n:"Repos", b:"Off", t:"rest", dur:"—", rest:0, foc:"", exos:[], card:null, tip:"" }
@@ -1237,7 +1438,6 @@ const P2 = [
 
   { l:"Jeu", n:"Cardio", b:"Cardio", t:"cardio", dur:"45 min", rest:0, foc:"Endurance · Machines cardio en rotation",
     exos:[
-      {n:"Vélo elliptique",s:"1×15",m:"Full body · Échauffement",note:"15 min à 60-65% FCmax — faible résistance"},
       {n:"Rameur",s:"1×20",m:"Dos / jambes / abdos · Corps de séance",note:"20 min à 70-75% FCmax — rythme soutenu"},
       {n:"Tapis de course",s:"1×10",m:"Jambes / cardio · Finisher",note:"10 min à 70% FCmax — allure confortable"}
     ],
@@ -1490,6 +1690,7 @@ function openProgSelector() {
         </div>
         ${!p.builtin ? `<div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px">
           <button class="pss-edit" data-ci="${p.ci}" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:6px 10px;border-radius:3px;border:1px solid var(--g1);background:transparent;color:var(--wm);cursor:pointer">✎</button>
+        <button class="pss-theme" data-ci="${p.ci}" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:6px 10px;border-radius:3px;border:1px solid var(--g1);background:transparent;color:var(--wm);cursor:pointer">🎨</button>
           <button class="pss-delete" data-ci="${p.ci}" style="font-size:16px;background:transparent;border:none;color:var(--wm);cursor:pointer;padding:4px">🗑</button>
         </div>` : ''}
       </div>
@@ -1640,6 +1841,12 @@ function openProgSelector() {
 
 function _activateProg(idx) {
   APT = idx; DB.set('activeProg', idx); ADI = todayDI();
+  // Appliquer la couleur du programme custom si définie
+  if (idx >= 2) {
+    const progs = DB.get('customProgs', []);
+    const prog = progs[idx - 2];
+    if (prog?.color) { _applyProgColor(prog.color, prog.name); }
+  }
   // Reset progression : semaine + historique séances + XP
   _saveWeekDone({ weekKey: _getWeekKey(), days: {}, finished: {} });
   DB.set('sessions', []);
@@ -1995,7 +2202,6 @@ function renderHome() {
 //   renderWeek()        → génère les chips de jours + affiche le jour courant
 //   selDay(i)           → sélectionne un jour manuellement
 //   renderDD(day, di)   → affiche le détail du jour sélectionné :
-//                         header + sections dépliables (Échauffement / Entraînement / Récup)
 // ══════════════════════════════════════════════════════════════════════
 // Calcule l'index du jour réel dans le programme (Lun=0 ... Dim=6)
 function todayDI() {
@@ -2207,7 +2413,6 @@ function renderDD(d, di) {
     <!-- ÉCHAUFFEMENT SECTION -->
     <div style="border:1px solid var(--g1);border-radius:6px;overflow:hidden;margin-bottom:10px">
       <button id="sec-wu-btn" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--black3);border:none;color:var(--w);cursor:pointer">
-        <span style="font-size:18px;font-weight:500">Échauffement</span>
         <span id="sec-wu-arrow" style="font-size:16px;color:var(--wm)">∨</span>
       </button>
       <div id="sec-wu-body" style="display:none;padding:14px 16px;background:var(--black2)">
@@ -2480,10 +2685,8 @@ function launchSingleExo(day, di, eidx, pi) {
 //   'done'          → écran de fin de séance (renderDone)
 //
 // Flux normal (muscu) :
-//   [Échauffement x6] → [Intro exo] → [Série] → [Repos] → ... → [Feedback] → [Done]
 //
 // Flux circuit (HIIT) :
-//   [Échauffement] → [Intro round 1] → [Exo1] → [Exo2] → ... → [Repos 75s] → [Intro round 2] → ...
 //
 // launchDay(pi, di)         → lance la séance complète du jour
 // launchSingleExo(...)      → lance un seul exercice en solo
@@ -2496,6 +2699,13 @@ function launchDay(pi, di) {
   Timer.stop();
   const prog = _getActiveProg();
   const day = prog[di];
+
+  // Séances spéciales — rendu dédié
+  if (day.t === 'special' && day.specialType) {
+    openSpecialSession(day);
+    return;
+  }
+
   const wu = (WARMUPS[day.t] || WARMUPS.muscle);
   const steps = [];
 
@@ -2573,14 +2783,235 @@ function attachQuitBtn() {
   if (btn) btn.addEventListener('click', confirmEnd);
 }
 
+
+// ══════════════════════════════════════════════════════════════════════
+// RENDU SÉANCE SPÉCIALE
+// ══════════════════════════════════════════════════════════════════════
+function openSpecialSession(day) {
+  const spec = SPECIAL_SESSIONS[day.specialType];
+  if (!spec) return;
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:800;background:var(--black);overflow-y:auto';
+
+  const color = spec.color || 'var(--accent)';
+
+  // Header
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:calc(var(--st)+14px) 20px 14px;background:var(--black2);border-bottom:1px solid var(--g1);display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10';
+  const backBtn = document.createElement('button');
+  backBtn.style.cssText = 'width:40px;height:40px;border-radius:50%;background:var(--g1);border:none;color:var(--w);font-size:20px;cursor:pointer;flex-shrink:0';
+  backBtn.textContent = '←';
+  backBtn.onclick = () => overlay.remove();
+  const hInfo = document.createElement('div');
+  hInfo.style.flex = '1';
+  hInfo.innerHTML = '<div style="font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:' + color + '">' + spec.icon + ' SÉANCE SPÉCIALE</div><div style="font-family:Bebas Neue,sans-serif;font-size:24px;color:var(--w);line-height:1">' + spec.label + '</div>';
+  header.appendChild(backBtn); header.appendChild(hInfo);
+  overlay.appendChild(header);
+
+  const body = document.createElement('div');
+  body.style.padding = '24px 20px';
+
+  // Description
+  const desc = document.createElement('div');
+  desc.style.cssText = 'font-size:14px;color:var(--wd);line-height:1.6;margin-bottom:20px;padding:14px;border-radius:8px;background:var(--black3);border-left:3px solid ' + color;
+  desc.textContent = spec.desc;
+  body.appendChild(desc);
+
+  // Contenu selon le type
+  if (day.specialType === 'deck_of_cards') {
+    _renderDeckOfCards(body, spec, overlay);
+  } else if (day.specialType === '1rm_day') {
+    _render1RMDay(body, spec, day);
+  } else if (day.specialType === 'spider_circuit' || day.specialType === 'benchmark') {
+    _renderCircuitSession(body, spec, day, color);
+  } else if (day.specialType === 'max_reps') {
+    _renderMaxRepsSession(body, spec, day, color);
+  }
+
+  // Tip
+  if (spec.tip) {
+    const tipEl = document.createElement('div');
+    tipEl.style.cssText = 'margin-top:20px;padding:12px 14px;border-radius:6px;background:rgba(239,159,39,0.08);border:1px solid rgba(239,159,39,0.25);font-size:12px;color:var(--amber);line-height:1.5';
+    tipEl.innerHTML = '💡 ' + spec.tip;
+    body.appendChild(tipEl);
+  }
+
+  overlay.appendChild(body);
+  document.body.appendChild(overlay);
+}
+
+function _renderDeckOfCards(body, spec, overlay) {
+  // Générer un deck mélangé
+  const suits = Object.keys(spec.suits);
+  const values = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  let deck = [];
+  suits.forEach(s => values.forEach(v => deck.push({ suit: s, value: v })));
+  // Fisher-Yates shuffle
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+
+  let cardIdx = 0;
+  let startTime = null;
+  let timerInterval = null;
+
+  const legendEl = document.createElement('div');
+  legendEl.style.cssText = 'display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px';
+  suits.forEach(s => {
+    const ex = spec.suits[s];
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:10px;border-radius:6px;background:var(--black3);border:1px solid var(--g1);display:flex;align-items:center;gap:8px';
+    el.innerHTML = '<span style="font-size:20px">' + s + '</span><span style="font-family:Barlow Condensed,sans-serif;font-size:12px;font-weight:700;color:var(--w)">' + ex.name + '</span>';
+    legendEl.appendChild(el);
+  });
+  body.appendChild(legendEl);
+
+  // Timer
+  const timerEl = document.createElement('div');
+  timerEl.style.cssText = 'font-family:Bebas Neue,sans-serif;font-size:48px;color:var(--accent);text-align:center;margin-bottom:12px';
+  timerEl.textContent = '00:00';
+  body.appendChild(timerEl);
+
+  // Card display
+  const cardArea = document.createElement('div');
+  cardArea.style.cssText = 'text-align:center;margin-bottom:24px';
+
+  function getRepVal(v) { return v === 'A' ? 11 : ['J','Q','K'].includes(v) ? 10 : parseInt(v); }
+
+  function showCard(idx) {
+    if (idx >= deck.length) {
+      // Fin
+      clearInterval(timerInterval);
+      const elapsed = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
+      const m = Math.floor(elapsed/60).toString().padStart(2,'0');
+      const s2 = (elapsed%60).toString().padStart(2,'0');
+      cardArea.innerHTML = '<div style="font-size:48px;margin-bottom:12px">🎉</div><div style="font-family:Bebas Neue,sans-serif;font-size:32px;color:var(--accent)">DECK TERMINÉ !</div><div style="font-size:20px;color:var(--wd);margin-top:8px">Temps : ' + m + ':' + s2 + '</div>';
+      // Sauvegarder le score
+      const scores = DB.get('deckScores', []);
+      scores.push({ date: new Date().toISOString(), time: elapsed });
+      DB.set('deckScores', scores);
+      return;
+    }
+    const card = deck[idx];
+    const ex = spec.suits[card.suit];
+    const reps = getRepVal(card.value);
+    cardArea.innerHTML =
+      '<div style="font-size:72px;line-height:1">' + card.suit + '</div>' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:80px;color:var(--w);line-height:1">' + card.value + '</div>' +
+      '<div style="font-family:Barlow Condensed,sans-serif;font-size:16px;font-weight:700;color:var(--accent);margin-top:8px">' + reps + ' × ' + ex.name + '</div>' +
+      '<div style="font-size:11px;color:var(--wm);margin-top:4px">Carte ' + (idx+1) + ' / ' + deck.length + '</div>';
+  }
+
+  showCard(0);
+  body.appendChild(cardArea);
+
+  const nextBtn = document.createElement('button');
+  nextBtn.style.cssText = 'width:100%;font-family:Barlow Condensed,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:18px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;box-shadow:0 0 16px var(--theme-glow)';
+  nextBtn.textContent = 'Carte suivante →';
+  nextBtn.onclick = () => {
+    if (!startTime) {
+      startTime = Date.now();
+      timerInterval = setInterval(() => {
+        const e = Math.round((Date.now() - startTime) / 1000);
+        timerEl.textContent = Math.floor(e/60).toString().padStart(2,'0') + ':' + (e%60).toString().padStart(2,'0');
+      }, 1000);
+    }
+    cardIdx++;
+    showCard(cardIdx);
+  };
+  body.appendChild(nextBtn);
+}
+
+function _render1RMDay(body, spec, day) {
+  const rms = DB.get('rms', {});
+  const mainExos = ['Deadlift', 'Barbell bench press', 'Barbell squat'];
+
+  const titleEl = document.createElement('div');
+  titleEl.style.cssText = 'font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--wm);margin-bottom:12px';
+  titleEl.textContent = 'Protocole de montée';
+  body.appendChild(titleEl);
+
+  mainExos.forEach(exo => {
+    const rm1 = rms[exo]?.length ? Math.max(...rms[exo].map(r => r.v)) : null;
+    if (!rm1) return;
+
+    const exoSec = document.createElement('div');
+    exoSec.style.cssText = 'margin-bottom:16px';
+    exoSec.appendChild(Object.assign(document.createElement('div'), {
+      style: 'font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--w);margin-bottom:8px',
+      textContent: exo
+    }));
+
+    spec.protocol.forEach(step => {
+      const w = Math.round(rm1 * step.pct / 100 / 2.5) * 2.5;
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:4px;margin-bottom:4px;background:' + (step.isMax ? 'rgba(255,215,0,0.08)' : 'var(--black3)') + ';border:1px solid ' + (step.isMax ? 'rgba(255,215,0,0.4)' : 'var(--g1)');
+      row.innerHTML =
+        '<span style="font-family:Barlow Condensed,sans-serif;font-size:12px;font-weight:700;color:' + (step.isMax ? '#FFD700' : 'var(--wm)') + '">' + step.label + '</span>' +
+        '<span style="font-family:Bebas Neue,sans-serif;font-size:18px;color:' + (step.isMax ? '#FFD700' : 'var(--w)') + '">' + step.reps + ' × ' + w + 'kg</span>';
+      exoSec.appendChild(row);
+    });
+    body.appendChild(exoSec);
+  });
+}
+
+function _renderCircuitSession(body, spec, day, color) {
+  if (!spec.exos) return;
+  const titleEl = document.createElement('div');
+  titleEl.style.cssText = 'font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--wm);margin-bottom:12px';
+  titleEl.textContent = (spec.rounds ? spec.rounds + ' rounds' : 'Séance') + ' · Repos ' + (spec.restBetweenRounds || 60) + 's entre rounds';
+  body.appendChild(titleEl);
+
+  spec.exos.forEach((exo, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:6px;background:var(--black3);border:1px solid var(--g1);margin-bottom:8px';
+    row.innerHTML =
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:' + color + ';width:24px;flex-shrink:0">' + (i+1) + '</div>' +
+      '<div style="flex:1"><div style="font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;color:var(--w)">' + exo.n + '</div><div style="font-size:11px;color:var(--wm)">' + (exo.note || exo.s) + '</div></div>' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:' + color + '">' + exo.s + '</div>';
+    body.appendChild(row);
+  });
+}
+
+function _renderMaxRepsSession(body, spec, day, color) {
+  const sessions = DB.get('sessions', []);
+  const rms = DB.get('rms', {});
+  // Trouver les 3 exos avec 1RM enregistré
+  const exosWithRM = Object.entries(rms)
+    .filter(([,v]) => v?.length)
+    .map(([name, entries]) => ({ name, rm1: Math.max(...entries.map(e => e.v)) }))
+    .slice(0, 3);
+
+  if (!exosWithRM.length) {
+    body.appendChild(Object.assign(document.createElement('div'), {
+      style: 'font-size:13px;color:var(--wm);text-align:center;padding:24px',
+      textContent: "Enregistre d'abord des 1RM dans le Profil → Records pour personnaliser ce challenge."
+    }));
+    return;
+  }
+
+  exosWithRM.forEach(({ name, rm1 }) => {
+    const targetW = Math.round(rm1 * 0.70 / 2.5) * 2.5;
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:14px;border-radius:6px;background:var(--black3);border:1px solid var(--g1);margin-bottom:10px';
+    row.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--w)">' + name + '</div>' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:' + color + '">' + targetW + ' kg</div>' +
+      '</div>' +
+      '<div style="font-size:11px;color:var(--wm)">1 série MAX · 70% du 1RM (' + rm1 + 'kg)</div>';
+    body.appendChild(row);
+  });
+}
+
 function renderStep() {
   Timer.stop();
   if (!SESS) return;
   const s = SESS.steps[SESS.idx];
-  // Badge contextuel : Round X/Y pour HIIT, Exo X/Y pour muscu, Échauffement pour WU
   let badge;
   if (s.kind === 'wu') {
-    badge = `Échauffement · ${s.i + 1}/${s.tot}`;
   } else if (s.kind === 'circuit-intro' || (s.kind === 'exo' && s.circuitMode)) {
     const round = (s.round ?? s.s?.round ?? 0) + 1;
     const totalR = s.totalRounds ?? 1;
@@ -2827,7 +3258,10 @@ function renderExo(s, badge) {
           <div style="font-family:'Bebas Neue',sans-serif;font-size:64px;color:var(--w);line-height:1" id="ti-num">${dispReps}</div>
           <div style="font-size:14px;color:var(--wm);margin-bottom:4px">secondes</div>
         ` : `
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:64px;color:var(--w);line-height:1">${dispReps}<span style="font-size:32px;color:var(--wm)">x</span></div>
+          ${dispReps === 'MAX'
+            ? `<div style="font-family:Bebas Neue,sans-serif;font-size:42px;color:var(--accent);line-height:1;letter-spacing:0.02em">JUSQU'À<br>L'ÉCHEC</div>`
+            : `<div style="font-family:Bebas Neue,sans-serif;font-size:64px;color:var(--w);line-height:1">${dispReps}<span style="font-size:32px;color:var(--wm)">x</span></div>`
+          }
         `}
         <div style="font-size:22px;font-weight:500;color:var(--w);margin-bottom:2px">${e.n}${dispW ? ` <span style="color:var(--wm);font-size:18px">· ${dispW} kg</span>` : ''}</div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -2949,6 +3383,239 @@ function renderExo(s, badge) {
 }
 
 // ── REST: plein écran centré, tap pour passer, swipe back
+
+
+// ══════════════════════════════════════════════════════════════════════
+// RENDU DES SÉANCES SPÉCIALES
+// ══════════════════════════════════════════════════════════════════════
+
+function renderSpecialDay(day) {
+  const type = day.specialType;
+  const spec = SPECIAL_DAY_TYPES[type];
+  if (!spec) { renderDone(); return; }
+
+  Timer.stop();
+  const accent = spec.color || 'var(--accent)';
+
+  document.getElementById('sess-body').innerHTML = `
+    <div style="position:relative;width:100%;min-height:100dvh;background:var(--black);display:flex;flex-direction:column">
+      <!-- TOP BAR -->
+      <div style="position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:calc(var(--st)+14px) 20px 14px;background:rgba(10,10,10,0.95);backdrop-filter:blur(12px)">
+        <button id="btn-quit-sp" style="width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:${accent}">${spec.icon} ${spec.label.toUpperCase()}</div>
+        <div style="width:40px"></div>
+      </div>
+
+      <!-- HERO -->
+      <div style="padding:24px 20px 0">
+        <div style="font-size:52px;margin-bottom:8px">${spec.icon}</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:42px;color:#fff;line-height:1;margin-bottom:6px">${spec.label}</div>
+        <div style="font-size:13px;color:var(--wm);line-height:1.5;margin-bottom:24px">${spec.intro}</div>
+      </div>
+
+      <!-- CONTENU SELON LE TYPE -->
+      <div id="special-content" style="flex:1;padding:0 20px 20px"></div>
+
+      <!-- BOUTON START -->
+      <div style="padding:16px 20px calc(20px + var(--sb))">
+        <button id="btn-sp-start" style="width:100%;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:18px;border-radius:8px;border:none;background:${accent};color:#fff;cursor:pointer;box-shadow:0 0 20px ${accent}44">
+          Commencer ${spec.icon}
+        </button>
+      </div>
+    </div>`;
+
+  document.getElementById('btn-quit-sp').onclick = () => endSess();
+
+  // Contenu selon le type
+  const content = document.getElementById('special-content');
+  if (type === '1rm_day') _renderOneRMDay(content, spec, accent);
+  else if (type === 'spider_circuit') _renderSpiderCircuit(content, spec, accent);
+  else if (type === 'deck_of_cards') _renderDeckOfCards(content, spec, accent);
+  else if (type === 'max_reps') _renderMaxReps(content, spec, accent, day);
+  else if (type === 'benchmark') _renderBenchmark(content, spec, accent);
+
+  document.getElementById('btn-sp-start').onclick = () => {
+    if (type === 'spider_circuit') _startCircuit(spec, accent);
+    else if (type === 'deck_of_cards') _startDeck(spec, accent);
+    else if (type === '1rm_day') _startOneRM(spec, accent, day);
+    else if (type === 'max_reps') _startMaxReps(spec, accent, day);
+    else if (type === 'benchmark') _startBenchmark(spec, accent);
+  };
+}
+
+function _renderOneRMDay(el, spec, accent) {
+  el.innerHTML = '<div style="font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--wm);margin-bottom:12px">Protocole montée au max</div>';
+  spec.protocol.forEach(step => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:6px;background:' + (step.isMax ? 'rgba(255,215,0,0.08)' : 'var(--black3)') + ';border:1px solid ' + (step.isMax ? accent : 'var(--g1)') + ';margin-bottom:6px';
+    row.innerHTML = '<div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:' + (step.isMax ? accent : 'var(--w)') + ';width:60px;flex-shrink:0">' + step.reps + ' × ' + step.pct + '%</div>' +
+      '<div style="flex:1;font-size:11px;color:var(--wm)">' + step.note + '</div>' +
+      (step.isMax ? '<div style="font-size:18px">🏆</div>' : '');
+    el.appendChild(row);
+  });
+}
+
+function _renderSpiderCircuit(el, spec, accent) {
+  el.innerHTML = '<div style="font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--wm);margin-bottom:12px">' + spec.rounds + ' rounds · repos ' + spec.restBetweenRounds + 's entre rounds</div>';
+  spec.exos.forEach((exo, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:6px;background:var(--black3);border:1px solid var(--g1);margin-bottom:6px';
+    row.innerHTML = '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:' + accent + ';width:20px;flex-shrink:0">' + (i+1) + '</div>' +
+      '<div style="flex:1"><div style="font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;color:var(--w)">' + exo.n + '</div><div style="font-size:11px;color:var(--wm)">' + exo.note + '</div></div>' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--w)">' + exo.reps + '</div>';
+    el.appendChild(row);
+  });
+}
+
+function _renderDeckOfCards(el, spec, accent) {
+  el.innerHTML = '<div style="font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--wm);margin-bottom:12px">Correspondances couleurs / exercices</div>';
+  Object.entries(spec.suits).forEach(([suit, data]) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:6px;background:var(--black3);border:1px solid var(--g1);margin-bottom:6px';
+    row.innerHTML = '<div style="font-family:Bebas Neue,sans-serif;font-size:26px;color:' + (['♥','♦'].includes(suit) ? '#E74C3C' : 'var(--w)') + '">' + suit + '</div>' +
+      '<div style="flex:1"><div style="font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;color:var(--w)">' + data.exo + '</div><div style="font-size:11px;color:var(--wm)">' + data.name + '</div></div>';
+    el.appendChild(row);
+  });
+  el.innerHTML += '<div style="font-size:11px;color:var(--wm);margin-top:8px;padding:8px 14px;background:rgba(74,144,226,0.08);border-radius:6px;border:1px solid rgba(74,144,226,0.2)">As=14, Roi=13, Dame=12, Valet=11, 2-10=valeur</div>';
+}
+
+function _renderMaxReps(el, spec, accent, day) {
+  el.innerHTML = '<div style="font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--wm);margin-bottom:12px">1 série à 70% du 1RM — max de reps</div>';
+  const exos = day.exos?.slice(0, 3) || [];
+  exos.forEach(exo => {
+    const sw = suggestW(exo.n, 10);
+    const w70 = sw ? Math.round(sw * 0.70 / 2.5) * 2.5 : null;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:6px;background:var(--black3);border:1px solid var(--g1);margin-bottom:6px';
+    row.innerHTML = '<div style="flex:1"><div style="font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;color:var(--w)">' + exo.n + '</div>' +
+      (w70 ? '<div style="font-size:11px;color:' + accent + '">' + w70 + ' kg · 1 série MAX</div>' : '<div style="font-size:11px;color:var(--wm)">1 série MAX</div>') + '</div>' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--wm)">MAX</div>';
+    el.appendChild(row);
+  });
+}
+
+function _renderBenchmark(el, spec, accent) {
+  el.innerHTML = '<div style="font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--wm);margin-bottom:12px">Séance de référence — compare avec tes résultats précédents</div>';
+  spec.exos.forEach(exo => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:6px;background:var(--black3);border:1px solid var(--g1);margin-bottom:6px';
+    row.innerHTML = '<div style="flex:1"><div style="font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;color:var(--w)">' + exo.n + '</div></div>' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:16px;color:' + (exo.isAmrap ? accent : 'var(--wm)') + '">' + (exo.isAmrap ? 'MAX' : exo.sets + '×' + exo.reps) + '</div>';
+    el.appendChild(row);
+  });
+}
+
+// Démarrage des séances spéciales — versions simplifiées qui utilisent le flow normal
+function _startCircuit(spec, accent) {
+  // Construire une séance circuit depuis spec
+  const fakeDay = {
+    n: spec.label, t: 'hiit', dur: spec.dur,
+    circuits: [{ name: 'Spider Circuit', exos: spec.exos.map(e => ({ n: e.n, s: '1×' + e.reps })), restBetweenRounds: spec.restBetweenRounds, rounds: spec.rounds }]
+  };
+  SESS.day = { ...SESS.day, ...fakeDay };
+  buildSteps(fakeDay);
+  SESS.idx = 0;
+  renderStep();
+}
+
+function _startDeck(spec, accent) {
+  // Générer 52 cartes aléatoirement et construire les steps
+  const suits = Object.keys(spec.suits);
+  const values = [2,3,4,5,6,7,8,9,10,'J','Q','K','A'];
+  const deck = [];
+  suits.forEach(suit => values.forEach(val => deck.push({ suit, val })));
+  // Mélanger (Fisher-Yates)
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  // Stocker le deck dans SESS pour l'affichage
+  SESS._deck = deck;
+  SESS._deckIdx = 0;
+  SESS._deckSpec = spec;
+  _renderDeckCard();
+}
+
+function _renderDeckCard() {
+  const deck = SESS._deck;
+  const spec = SESS._deckSpec;
+  const idx = SESS._deckIdx;
+  if (!deck || idx >= deck.length) { renderDone(); return; }
+
+  const card = deck[idx];
+  const suit = card.suit;
+  const val = card.val;
+  const exoName = spec.suits[suit]?.exo || 'Burpees';
+  const reps = spec.faceValues[val] || parseInt(val) || 10;
+  const isRed = ['♥','♦'].includes(suit);
+  const accent = spec.color || '#4A90E2';
+
+  document.getElementById('sess-body').innerHTML = `
+    <div style="position:relative;width:100%;height:100dvh;background:var(--black);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer" id="deck-screen">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--wm);margin-bottom:24px">Carte ${idx+1} / ${deck.length}</div>
+      <!-- La carte -->
+      <div style="width:160px;height:220px;border-radius:16px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(0,0,0,0.5);margin-bottom:32px">
+        <div style="font-size:64px;color:${isRed ? '#E74C3C' : '#1a1a1a'};line-height:1">${suit}</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:52px;color:${isRed ? '#E74C3C' : '#1a1a1a'};line-height:1">${val}</div>
+      </div>
+      <!-- Exercice et reps -->
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:52px;color:#fff;line-height:1;margin-bottom:4px">${reps}<span style="font-size:24px;color:var(--wm)">x</span></div>
+      <div style="font-size:18px;font-weight:500;color:#fff;margin-bottom:40px">${exoName}</div>
+      <!-- Progression -->
+      <div style="width:200px;height:3px;background:var(--g1);border-radius:2px;overflow:hidden;margin-bottom:40px">
+        <div style="height:100%;width:${(idx/deck.length*100).toFixed(1)}%;background:${accent};border-radius:2px;transition:width 0.4s"></div>
+      </div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.2)">Touche pour la prochaine carte</div>
+    </div>`;
+
+  document.getElementById('deck-screen').addEventListener('click', () => {
+    SESS._deckIdx++;
+    _renderDeckCard();
+  });
+}
+
+function _startOneRM(spec, accent, day) {
+  // Flow simple avec les steps du protocole
+  const exoName = day.exos?.[0]?.n || 'Deadlift';
+  const rm1 = (() => { const rms = DB.get('rms',{}); return rms[exoName]?.length ? Math.max(...rms[exoName].map(r=>r.v)) : null; })();
+  const steps = spec.protocol.map((step, i) => {
+    const w = rm1 ? Math.round(rm1 * step.pct / 100 / 2.5) * 2.5 : null;
+    return {
+      kind: 'exo', e: { n: exoName }, si: i, totalSets: spec.protocol.length,
+      reps: step.isMax ? 'MAX' : parseInt(step.reps),
+      isTimed: false, restSec: 120,
+      prescribedWeight: w,
+      isMax: step.isMax,
+      stepLabel: step.label,
+    };
+  });
+  SESS.steps = steps;
+  SESS.idx = 0;
+  renderStep();
+}
+
+function _startMaxReps(spec, accent, day) {
+  const exos = day.exos?.slice(0, 3) || [];
+  const steps = exos.map((exo, i) => {
+    const sw = suggestW(exo.n, 10);
+    const w70 = sw ? Math.round(sw * 0.70 / 2.5) * 2.5 : null;
+    return { kind: 'exo', e: { n: exo.n }, si: 0, totalSets: 1, reps: 'MAX', isTimed: false, restSec: 180, prescribedWeight: w70, isMax: true };
+  });
+  SESS.steps = steps;
+  SESS.idx = 0;
+  renderStep();
+}
+
+function _startBenchmark(spec, accent) {
+  const steps = spec.exos.map((exo, i) => {
+    const rm1val = (() => { const rms = DB.get('rms',{}); return rms[exo.n]?.length ? Math.max(...rms[exo.n].map(r=>r.v)) : null; })();
+    const w = rm1val && exo.pct ? Math.round(rm1val * exo.pct / 100 / 2.5) * 2.5 : null;
+    return { kind: 'exo', e: { n: exo.n }, si: 0, totalSets: exo.sets || 1, reps: exo.isAmrap ? 'MAX' : exo.reps, isTimed: false, restSec: 120, prescribedWeight: w, isMax: exo.isAmrap };
+  });
+  SESS.steps = steps;
+  SESS.idx = 0;
+  renderStep();
+}
 
 // ── ANIMATION TOILE DE TRANSITION
 function playWebTransition(cb, duration = 600) {
@@ -3301,12 +3968,60 @@ function adjSW(delta) {
   if (el) el.textContent = Math.max(0, parseFloat(el.textContent) + delta).toFixed(1).replace('.0','');
 }
 
+
+// Mini-sheet pour saisir les reps d'un set jusqu'à l'échec
+function _openFailureInput(s, adjW) {
+  // Supprimer si déjà ouvert
+  document.getElementById('failure-sheet')?.remove();
+
+  const sheet = document.createElement('div');
+  sheet.id = 'failure-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;z-index:50;background:rgba(0,0,0,0.75)';
+  sheet.addEventListener('click', e => e.stopPropagation());
+
+  const inner = document.createElement('div');
+  inner.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:var(--black2);border-top:2px solid var(--accent);border-radius:12px 12px 0 0;padding:24px 24px calc(24px + var(--sb))';
+
+  inner.innerHTML = `
+    <div style="width:36px;height:3px;background:var(--g1);border-radius:2px;margin:0 auto 20px"></div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);text-align:center;margin-bottom:4px">COMBIEN DE REPS ?</div>
+    <div style="font-size:12px;color:var(--wm);text-align:center;margin-bottom:24px">${adjW}kg · Jusqu'à l'échec musculaire</div>
+    <div style="display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:28px">
+      <button id="fail-minus" style="width:44px;height:44px;border-radius:50%;border:1px solid var(--g1);background:transparent;color:var(--w);font-size:22px;cursor:pointer">−</button>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:72px;color:var(--w);line-height:1;min-width:80px;text-align:center" id="fail-val">0</div>
+      <button id="fail-plus" style="width:44px;height:44px;border-radius:50%;border:1px solid var(--g1);background:transparent;color:var(--w);font-size:22px;cursor:pointer">+</button>
+    </div>
+    <button id="fail-save" style="width:100%;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;box-shadow:0 0 16px var(--theme-glow)">Valider ✓</button>
+  `;
+
+  let val = 0;
+  sheet.appendChild(inner);
+  document.getElementById('sess-body').appendChild(sheet);
+
+  document.getElementById('fail-minus').onclick = e => { e.stopPropagation(); val = Math.max(0, val - 1); document.getElementById('fail-val').textContent = val; };
+  document.getElementById('fail-plus').onclick = e => { e.stopPropagation(); val++; document.getElementById('fail-val').textContent = val; };
+  document.getElementById('fail-save').onclick = e => {
+    e.stopPropagation();
+    sheet.remove();
+    if (val > 0) {
+      _saveSet(s, adjW, val);
+      nextStep();
+    }
+  };
+}
+
 function logSet() {
   if (!SESS) return;
   const s = SESS.steps[SESS.idx];
-  const adjR = SESS._adjReps?.[SESS.idx] ?? s.reps;
+  let adjR = SESS._adjReps?.[SESS.idx] ?? s.reps;
   const adjW = SESS._adjWeight?.[SESS.idx] ?? 0;
-  // Allow 0 weight for bodyweight exercises — only block if reps are missing
+
+  // Set jusqu'à l'échec — ouvrir un mini-sheet pour saisir les reps
+  if (adjR === 'MAX' || s.isFailure) {
+    _openFailureInput(s, adjW);
+    return;
+  }
+
   if (!adjR) { showToast('Configure les reps via le bouton C !'); return; }
   _saveSet(s, adjW, adjR);
   nextStep();
@@ -4440,7 +5155,95 @@ const AI_PARAMS = {
     notes:'Fonctionnel, varié, haute intensité. Westside dynamique pour les mouvements olympiques.',
     cardioZone: 5, deloadPct:0.65, deloadFreq:4,
   },
+
+  // ── PYRAMIDE DESCENDANTE (DC Training style)
+  'pyramid_down': {
+    protocol:'Pyramide descendante',
+    sets:4, repsMin:5, repsMax:8, pct:85, rest:180, progression:2.5,
+    intent:'Force + Echec musculaire', repsLabel:'5/5/8/MAX',
+    notes:"Sets lourds décroissants, dernier set jusqu'à l'échec. Maximise le recrutement musculaire.",
+    deloadPct:0.65, deloadFreq:4,
+    pyramid_down: true,
+  },
 };
+
+
+// ══════════════════════════════════════════════════════════════════════
+// SÉANCES SPÉCIALES — 1RM Day, Spider Circuit, Deck of Cards, etc.
+// ══════════════════════════════════════════════════════════════════════
+const SPECIAL_SESSIONS = {
+  '1rm_day': {
+    icon: '🏆', label: '1RM Day', color: '#FFD700',
+    desc: 'Monte au maximum absolu sur 1-2 exos composés. Met à jour tes records.',
+    type: 'special', dur: '50 min',
+    protocol: [
+      { label: 'Activation', reps: '3', pct: 65 },
+      { label: 'Approche lourde', reps: '2', pct: 80 },
+      { label: 'Approche max', reps: '1', pct: 90 },
+      { label: 'Tentative record', reps: '1', pct: 97 },
+      { label: 'MAX ABSOLU', reps: '1', pct: 100, isMax: true },
+    ],
+    tip: 'Repos 3-5 min entre chaque montée. Visualise avant de t\'élancer.',
+  },
+  'spider_circuit': {
+    icon: '⚡', label: 'Spider Circuit', color: '#E8192C',
+    desc: '6 exos poids de corps enchaînés. 4 rounds. Chronométré. Score = temps total.',
+    type: 'special', dur: '35 min',
+    exos: [
+      { n: 'Push-ups', s: '10×', note: 'Pompes explosives' },
+      { n: 'Pull-ups', s: '8×', note: 'Traction stricte' },
+      { n: 'Dips', s: '10×', note: 'Dips parallèles' },
+      { n: 'Jump squats', s: '15×', note: 'Sauts maximaux' },
+      { n: 'Mountain climbers', s: '20×', note: 'Vitesse max' },
+      { n: 'Burpees', s: '5×', note: 'Complets' },
+    ],
+    rounds: 4, restBetweenRounds: 90,
+    tip: 'Repos minimal entre exos. Challenge = battre ton temps précédent.',
+  },
+  'deck_of_cards': {
+    icon: '🃏', label: 'Deck of Cards', color: '#4A90E2',
+    desc: 'Chaque couleur = un exercice. Chaque valeur = les reps. Pioche et bouge.',
+    type: 'special', dur: '40 min',
+    suits: {
+      '♠': { exo: 'Push-ups', name: 'Pompes' },
+      '♥': { exo: 'Goblet squat', name: 'Squats' },
+      '♦': { exo: 'Mountain climbers', name: 'Grimpeurs' },
+      '♣': { exo: 'Burpees', name: 'Burpees' },
+    },
+    tip: 'As = 11 reps. Figures (J/Q/K) = 10 reps. Score = temps pour finir le deck.',
+  },
+  'max_reps': {
+    icon: '📈', label: 'Max Reps Challenge', color: '#1D9E75',
+    desc: '3 exos clés à 70% du 1RM, 1 seule série max. Score sauvegardé.',
+    type: 'special', dur: '30 min',
+    tip: "Forme parfaite jusqu'au bout. Stop quand la forme lâche, pas quand tu lâches.",
+  },
+  'benchmark': {
+    icon: '🎯', label: 'Benchmark WOD', color: '#FF6B00',
+    desc: 'Séance de référence mensuelle identique. Compare tes résultats dans le temps.',
+    type: 'special', dur: '45 min',
+    exos: [
+      { n: 'Deadlift', s: '5×5', note: '80% 1RM' },
+      { n: 'Pull-ups', s: 'MAX×1', note: 'Max absolu' },
+    ],
+    tip: 'Identique à chaque fois : même exos, même ordre, même repos. Seul le score change.',
+  },
+};
+
+// Fréquence d'injection des séances spéciales selon le nombre de jours/semaine
+function _getSpecialSessionSchedule(daysPerWeek, weeks) {
+  const schedule = {}; // { weekIdx_dayIdx: sessionType }
+  if (weeks < 3) return schedule;
+  // Injecter une séance spéciale toutes les 3 semaines
+  const types = ['spider_circuit', 'max_reps', '1rm_day', 'deck_of_cards', 'benchmark'];
+  let typeIdx = 0;
+  for (let w = 2; w < weeks; w += 3) {
+    const dayIdx = Math.floor(daysPerWeek / 2); // milieu de semaine
+    schedule[w + '_' + dayIdx] = types[typeIdx % types.length];
+    typeIdx++;
+  }
+  return schedule;
+}
 
 // ══════════════════════════════════════════════════════════════════════
 // PRESCRIPTION IA MULTI-PROTOCOLES
@@ -4491,23 +5294,35 @@ function _pbAIPrescribe(exoName, objective, weekIdx, allExos = []) {
   const isPyramid  = p.pyramid || p.pct >= 80;
   const actualSets = isDeload ? Math.max(2, Math.floor(p.sets * 0.7)) : p.sets;
 
-  const sets = Array.from({ length: actualSets }, (_, i) => {
-    // Pyramide montante pour force/Prilepin
-    const repsVar = isPyramid
-      ? Math.max(p.repsMin, targetReps - i)
-      : targetReps;
-    const pctVar  = isPyramid
-      ? Math.min(100, effectivePct + i * 2)
-      : effectivePct;
-    const wVar    = rm1 && isPyramid
-      ? Math.round((_pbWeightFromPct(exoName, pctVar, repsVar) + progression) / 2.5) * 2.5
-      : prescribedWeight;
+  let sets;
 
-    // Repos : dernière série = repos + 30s (récup complète)
-    const restVar = i === actualSets - 1 ? p.rest + 30 : p.rest;
-
-    return { reps: repsVar, weight: wVar, pct: pctVar, rest: restVar };
-  });
+  // ── CAS SPÉCIAL : Pyramide descendante (DC Training)
+  if (p.pyramid_down && !isDeload) {
+    const heavyW  = prescribedWeight || 0;
+    const midW    = Math.round(heavyW * 0.92 / 2.5) * 2.5;
+    const lightW  = Math.round(heavyW * 0.77 / 2.5) * 2.5;
+    sets = [
+      { reps: 5,     weight: heavyW, pct: effectivePct,      rest: p.rest },
+      { reps: 5,     weight: heavyW, pct: effectivePct,      rest: p.rest },
+      { reps: 8,     weight: midW,   pct: Math.round(effectivePct*0.92), rest: p.rest },
+      { reps: 'MAX', weight: lightW, pct: Math.round(effectivePct*0.77), rest: p.rest + 60, isFailure: true },
+    ];
+  } else {
+    sets = Array.from({ length: actualSets }, (_, i) => {
+      // Pyramide montante pour force/Prilepin
+      const repsVar = isPyramid
+        ? Math.max(p.repsMin, targetReps - i)
+        : targetReps;
+      const pctVar  = isPyramid
+        ? Math.min(100, effectivePct + i * 2)
+        : effectivePct;
+      const wVar    = rm1 && isPyramid
+        ? Math.round((_pbWeightFromPct(exoName, pctVar, repsVar) + progression) / 2.5) * 2.5
+        : prescribedWeight;
+      const restVar = i === actualSets - 1 ? p.rest + 30 : p.rest;
+      return { reps: repsVar, weight: wVar, pct: pctVar, rest: restVar };
+    });
+  }
 
   // ── Notes affichage
   const fatigueNote  = fatigueFactor < 0.95 ? Math.round((1-fatigueFactor)*100)+'% réduit (fatigue)' : null;
@@ -6169,7 +6984,6 @@ Retourne UNIQUEMENT un bloc <prog>...</prog> contenant ce JSON exact :
   "days": [
     {"l":"Lun","n":"Nom séance","t":"muscle","dur":"45 min","rest":75,"foc":"focus",
      "exos":[{"n":"Exercice","s":"3×10","m":"muscles"}],
-     "card":"Échauffement : description",
      "tip":"Retour au calme : étirements"},
     {"l":"Mar","n":"Repos","t":"rest","dur":"—","rest":0,"foc":"","exos":[],"card":null,"tip":""}
   ]
@@ -6540,6 +7354,25 @@ function _coachSaveProg(prog, activate) {
       tip: tipText
     };
   });
+
+  // Insérer des séances spéciales selon la fréquence configurée
+  const progDuration = prog.duration || 6;
+  if (progDuration >= 4) {
+    // Déterminer les types de séances spéciales à insérer
+    const specialQueue = [];
+    if (progDuration >= 4) specialQueue.push('spider_circuit');
+    if (progDuration >= 6) specialQueue.push('max_reps');
+    if (progDuration >= 8) specialQueue.push('benchmark');
+    if (progDuration >= 10) specialQueue.push('1rm_day');
+    if (progDuration >= 8) specialQueue.push('deck_of_cards');
+
+    // Marquer 1 jour repos par bloc de SPECIAL_FREQ semaines comme spécial
+    // On ne modifie pas les jours existants — on crée une liste de remplacements futurs
+    prog._specialSchedule = specialQueue.map((type, i) => ({
+      type,
+      atWeek: SPECIAL_FREQ[type] || 3,
+    }));
+  }
 
   // S'assurer d'avoir 7 jours
   const labels = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
