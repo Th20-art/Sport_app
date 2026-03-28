@@ -4971,6 +4971,111 @@ function _pbSaveOnly() {
 // ══════════════════════════════════════════════════════════════════════
 let COACH = null;
 
+const COACH_STEPS = [
+  {
+    id: 'level',
+    icon: '🏃',
+    question: 'Où en es-tu physiquement ?',
+    sub: 'Pas de jugement — choisis ce qui te correspond le mieux',
+    type: 'choice',
+    choices: [
+      { label: 'Débutant', sub: "Je commence ou je reprends", value: 'débutant', icon: '🌱' },
+      { label: 'Intermédiaire', sub: "Je m'entraîne depuis quelques mois", value: 'intermédiaire', icon: '⚡' },
+      { label: 'Avancé', sub: "Je m'entraîne régulièrement depuis + d'1 an", value: 'avancé', icon: '🔥' },
+    ]
+  },
+  {
+    id: 'inspiration',
+    icon: '⚡',
+    question: "Un physique qui t'inspire ?",
+    sub: "Aide l'IA à comprendre tes attentes — pas une obligation",
+    type: 'inspiration',
+    choices: [
+      { label: 'Tom Holland', sub: 'Athlétique, lean, fonctionnel', value: 'Tom Holland Spider-Man : corps athlétique lean et fonctionnel, cardio + muscu équilibrée, mobilité élevée', icon: '🕷️', img: 'images/inspirations/tom-holland.jpg', imgFallback: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Tom_Holland_by_Gage_Skidmore.jpg/440px-Tom_Holland_by_Gage_Skidmore.jpg' },
+      { label: 'Chris Hemsworth', sub: 'Masse, force, carrure', value: 'Chris Hemsworth Thor : masse musculaire importante, large dos et épaules, force maximale, volume élevé', icon: '⚡', img: 'images/inspirations/thor.jpg', imgFallback: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Chris_Hemsworth_by_Gage_Skidmore_2.jpg/440px-Chris_Hemsworth_by_Gage_Skidmore_2.jpg' },
+      { label: 'Zac Efron', sub: 'Sec, défini, esthétique', value: 'Zac Efron : corps sec et très défini, faible % graisse, esthétique, cardio + musculation modérée', icon: '🌊', img: 'images/inspirations/zac-efron.jpg', imgFallback: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Zac_Efron_2019.jpg/440px-Zac_Efron_2019.jpg' },
+      { label: 'Goku', sub: 'Explosivité, puissance, endurance', value: 'Goku Saiyan : explosivité maximale, puissance fonctionnelle, endurance extrême, HIIT et force combinés', icon: '🔥', img: 'images/inspirations/goku.jpg', imgFallback: null },
+      { label: 'Ryan Reynolds', sub: 'Lean, fonctionnel, équilibré', value: 'Ryan Reynolds Deadpool : lean et fonctionnel, équilibré, pas trop massif, cardio et musculation', icon: '🎯', img: 'images/inspirations/ryan-reynolds.jpg', imgFallback: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Ryan_Reynolds_2016.jpg/440px-Ryan_Reynolds_2016.jpg' },
+      { label: 'Gojo Satoru', sub: 'Agile, sec, explosif', value: 'Gojo Satoru : agilité extrême, corps sec et explosif, mobilité parfaite, pliométrie et arts martiaux', icon: '👁️', img: 'images/inspirations/gojo.jpg', imgFallback: null },
+      { label: 'Le mien', sub: 'Mon propre objectif physique', value: 'custom', icon: '✨', img: null },
+    ]
+  },
+  {
+    id: 'goal',
+    icon: '🎯',
+    question: 'Ton objectif principal ?',
+    sub: 'Ce que tu veux vraiment obtenir',
+    type: 'choice',
+    choices: [
+      { label: 'Prendre du muscle', sub: 'Prise de masse, volume', value: 'prise de masse', icon: '💪' },
+      { label: 'Perdre du poids', sub: 'Brûler des graisses', value: 'perte de poids', icon: '🔥' },
+      { label: 'Être plus fort', sub: 'Force maximale', value: 'force', icon: '🏋️' },
+      { label: 'Me sentir mieux', sub: 'Cardio, endurance, mobilité', value: 'endurance', icon: '🧘' },
+    ]
+  },
+  {
+    id: 'days',
+    icon: '📅',
+    question: 'Combien de jours par semaine ?',
+    sub: "Sois réaliste — la régularité > l'intensité",
+    type: 'choice',
+    choices: [
+      { label: '2 jours', sub: 'Minimum, idéal pour débutant', value: '2', icon: '😌' },
+      { label: '3 jours', sub: 'Le sweet spot', value: '3', icon: '✅' },
+      { label: '4 jours', sub: 'Bon volume hebdo', value: '4', icon: '💪' },
+      { label: '5 jours', sub: 'Entraînement intensif', value: '5', icon: '🔥' },
+    ]
+  },
+  {
+    id: 'duration',
+    icon: '⏱️',
+    question: 'Combien de temps par séance ?',
+    sub: 'Durée que tu peux tenir chaque semaine',
+    type: 'choice',
+    choices: [
+      { label: '30 min', sub: 'Court et efficace', value: '30', icon: '⚡' },
+      { label: '45 min', sub: 'Le bon équilibre', value: '45', icon: '✅' },
+      { label: '1 heure', sub: 'Séance complète', value: '60', icon: '💪' },
+      { label: '1h30+', sub: 'Pour les passionnés', value: '90', icon: '🏆' },
+    ]
+  },
+  {
+    id: 'equipment',
+    icon: '🏋️',
+    question: "Tu t'entraînes où ?",
+    sub: 'Pour adapter les exercices au matériel disponible',
+    type: 'equipment',
+    choices: [
+      { label: 'Salle de sport', sub: 'Accès au matériel', value: 'salle', icon: '🏢',
+        precisions: [
+          { label: 'Basic-Fit / Neoness', sub: 'Machines, câbles, haltères', value: 'Basic-Fit : machines guidées, câbles, haltères', icon: '🔵' },
+          { label: 'Fitness Park / grande salle', sub: 'Matériel complet, barre olympique', value: 'grande salle : barres olympiques, squat rack, câbles, machines', icon: '🟢' },
+          { label: 'CrossFit Box', sub: 'Barres, kettlebells, gymnase', value: 'CrossFit box : barres, kettlebells, anneaux, box jumps', icon: '🟠' },
+          { label: 'Salle classique', sub: 'Équipement standard', value: 'salle standard : haltères, quelques machines, bancs', icon: '⚪' },
+        ]
+      },
+      { label: 'À la maison', sub: 'Poids de corps, peu de matériel', value: 'maison : poids de corps uniquement', icon: '🏠', precisions: null },
+      { label: 'Home gym', sub: 'Haltères, barre, banc', value: 'home gym : haltères, barre olympique, banc', icon: '🏋️', precisions: null },
+      { label: 'Extérieur', sub: 'Parc, street workout', value: 'extérieur : barres de traction, parallèles, poids de corps', icon: '🌳', precisions: null },
+    ]
+  },
+  {
+    id: 'constraint',
+    icon: '⚠️',
+    question: 'Des zones à protéger ?',
+    sub: 'Plusieurs choix possibles — ajoute aussi tes contraintes spécifiques',
+    type: 'multiselect',
+    choices: [
+      { label: 'Aucune', sub: 'Je peux tout faire', value: 'aucune', icon: '✅', exclusive: true },
+      { label: 'Dos / lombaires', sub: 'Éviter les charges lourdes en flexion', value: 'dos', icon: '🔴' },
+      { label: 'Épaules / poignets', sub: 'Adapter les mouvements de poussée', value: 'épaules', icon: '🔴' },
+      { label: 'Genoux / hanches', sub: 'Valgus, douleurs articulaires', value: 'genoux et hanches', icon: '🔴' },
+      { label: 'Cervicales / nuque', sub: 'Éviter les charges overhead', value: 'cervicales', icon: '🔴' },
+      { label: 'Cheville / pied', sub: 'Adapter les sauts et courses', value: 'cheville', icon: '🔴' },
+    ]
+  },
+];
+
 // Définition des étapes du flow
 
 
