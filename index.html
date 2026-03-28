@@ -303,6 +303,23 @@ button[onclick="openForceMax()"] {
   70%  { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(1); }
 }
+
+/* Transition toile d'araignée */
+#web-transition {
+  position: fixed; inset: 0; z-index: 9999;
+  pointer-events: none; display: none;
+  background: var(--black);
+}
+#web-transition svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+@keyframes webDraw {
+  from { stroke-dashoffset: 1000; opacity: 0; }
+  to   { stroke-dashoffset: 0;    opacity: 1; }
+}
+@keyframes webFade {
+  0%   { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -310,6 +327,25 @@ button[onclick="openForceMax()"] {
 </style>
 </head>
 <body>
+<!-- Transition toile d'araignée -->
+<div id="web-transition">
+  <svg viewBox="0 0 400 800" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="var(--accent)" stroke-width="0.8" fill="none" opacity="0.7">
+      <line class="wl" x1="200" y1="0" x2="0" y2="400"   stroke-dasharray="1000" stroke-dashoffset="1000"/>
+      <line class="wl" x1="200" y1="0" x2="400" y2="400"  stroke-dasharray="1000" stroke-dashoffset="1000"/>
+      <line class="wl" x1="200" y1="0" x2="200" y2="800"  stroke-dasharray="1000" stroke-dashoffset="1000"/>
+      <line class="wl" x1="200" y1="0" x2="60"  y2="700"  stroke-dasharray="1000" stroke-dashoffset="1000"/>
+      <line class="wl" x1="200" y1="0" x2="340" y2="700"  stroke-dasharray="1000" stroke-dashoffset="1000"/>
+      <line class="wl" x1="200" y1="0" x2="20"  y2="200"  stroke-dasharray="1000" stroke-dashoffset="1000"/>
+      <line class="wl" x1="200" y1="0" x2="380" y2="200"  stroke-dasharray="1000" stroke-dashoffset="1000"/>
+      <ellipse class="wl" cx="200" cy="0" rx="80"  ry="80"  stroke-dasharray="1000" stroke-dashoffset="1000"/>
+      <ellipse class="wl" cx="200" cy="0" rx="180" ry="180" stroke-dasharray="1000" stroke-dashoffset="1000"/>
+      <ellipse class="wl" cx="200" cy="0" rx="300" ry="300" stroke-dasharray="1000" stroke-dashoffset="1000"/>
+      <ellipse class="wl" cx="200" cy="0" rx="450" ry="450" stroke-dasharray="1000" stroke-dashoffset="1000"/>
+    </g>
+  </svg>
+</div>
+
 <div id="root">
   <!-- HOME -->
   <div id="pg-home" class="pg on">
@@ -478,6 +514,16 @@ button[onclick="openForceMax()"] {
 
       <!-- Bibliothèque exercices custom -->
       <div class="sec">Ma bibliothèque</div>
+      <button onclick="openRoadmap()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--black3);border:1px solid var(--g1);border-radius:6px;cursor:pointer;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:24px">🏆</span>
+          <div style="text-align:left">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--w);letter-spacing:0.03em">Ma Roadmap</div>
+            <div style="font-size:11px;color:var(--wm)" id="roadmap-badge-count">Aucun objectif défini</div>
+          </div>
+        </div>
+        <span style="color:var(--wm);font-size:20px">›</span>
+      </button>
       <button onclick="openExoLibrary()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--black3);border:1px solid var(--g1);border-radius:6px;cursor:pointer;margin-bottom:16px">
         <div style="display:flex;align-items:center;gap:12px">
           <span style="font-size:24px">📚</span>
@@ -1203,7 +1249,40 @@ const P2 = [
 // ➕ Pour ajouter un exercice aux selects 1RM : ajoute son nom ici.
 //    (il doit aussi exister dans IMGS pour avoir une image)
 // ══════════════════════════════════════════════════════════════════════
-const EXS = ["Deadlift","Dumbbell bench press","Incline dumbbell press","Chin-ups","Goblet squat","Dumbbell shoulder press","Lat pulldown","Renegade rows","Dip bar leg raises","Bear crawls","Cable face pulls","Planche","Hollow body hold","Ab wheel rollout","Mountain climbers","Burpees","Jump squats","Battle ropes","Kettlebell swings","Tuck jumps","Lateral raises","Triceps pushdown","Dumbbell biceps curl","Seated cable row","Romanian deadlift","Dumbbell lunges","Leg press"];
+// Traduction FR→EN pour normaliser les noms générés par l'IA
+const EXO_FR_TO_EN = {
+  // Exercices courants générés en français
+  'développé couché barre':'Barbell bench press','développé couché haltères':'Dumbbell bench press',
+  'développé incliné haltères':'Incline dumbbell press','développé épaules machine':'Machine shoulder press',
+  'développé épaules haltères':'Dumbbell shoulder press','développé militaire':'Overhead press',
+  'squat':'Barbell squat','squat barre':'Barbell squat','goblet squat':'Goblet squat',
+  'fentes':'Dumbbell lunges','fentes haltères':'Dumbbell lunges','presse à cuisses':'Leg press',
+  'leg press':'Leg press','extension quadriceps':'Leg extension','curl ischio':'Leg curl',
+  'soulevé de terre':'Deadlift','soulevé de terre roumain':'Romanian deadlift',
+  'rowing barre':'Barbell row','rowing haltère':'Dumbbell row','tirage horizontal câble':'Seated cable row',
+  'tirage poulie haute':'Lat pulldown','tractions':'Pull-ups','traction barre':'Pull-ups',
+  'dips':'Dips','dips assistés machine':'Assisted dips','élévations latérales':'Lateral raises',
+  'élévations latérales câble':'Cable lateral raises','oiseau':'Rear delt fly',
+  'curl biceps':'Dumbbell biceps curl','curl marteau':'Hammer curl',
+  'extension triceps poulie':'Triceps pushdown','extension triceps poulie haute':'Triceps pushdown',
+  'skull crusher':'Skull crusher','pompes':'Push-ups','abdos':'Planche',
+  'gainage':'Plank','crunch':'Crunch','relevés de jambes':'Leg raises',
+  'burpees':'Burpees','mountain climbers':'Mountain climbers','jumping jacks':'Jumping jacks',
+  'corde à sauter':'Jump rope','rameur':'Rowing machine','vélo elliptique':'Elliptical',
+  'kettlebell swings':'Kettlebell swings','battle ropes':'Battle ropes',
+  'hip thrust':'Hip thrust','hip thrust barre':'Hip thrust',
+  'croisés poulie':'Cable fly','écartés haltères':'Dumbbell fly',
+  'tirage nuque':'Behind-the-neck pulldown','rowing visage':'Face pulls',
+  'face pulls':'Cable face pulls',
+};
+
+function normalizeExoName(name) {
+  if (!name) return name;
+  const lower = name.toLowerCase().trim();
+  return EXO_FR_TO_EN[lower] || name;
+}
+
+const EXS = ["Deadlift","Barbell bench press","Dumbbell bench press","Incline dumbbell press","Overhead press","Barbell squat","Goblet squat","Chin-ups","Pull-ups","Lat pulldown","Seated cable row","Barbell row","Dumbbell row","Dumbbell shoulder press","Machine shoulder press","Lateral raises","Cable lateral raises","Rear delt fly","Cable face pulls","Romanian deadlift","Dumbbell lunges","Leg press","Leg extension","Leg curl","Hip thrust","Dumbbell biceps curl","Hammer curl","Triceps pushdown","Skull crusher","Cable fly","Dumbbell fly","Assisted dips","Dips","Dip bar leg raises","Planche","Hollow body hold","Ab wheel rollout","Plank","Mountain climbers","Burpees","Jump squats","Battle ropes","Kettlebell swings","Tuck jumps","Renegade rows","Bear crawls","Push-ups","Jumping jacks","Jump rope","Rowing machine","Elliptical"];
 
 // ══════════════════════════════════════════════════════════════════════
 // NAVIGATION — gestion des onglets et du thème
@@ -1228,7 +1307,7 @@ function goTo(id) {
   if (fixedBtns) fixedBtns.style.display = id === 'prog' ? 'block' : 'none';
   if (id === 'home') { renderHome(); }
   if (id === 'prog') { renderWeek(); _checkFinishBanner(); }
-  if (id === 'profil') { fillSelects(); renderRecords(); renderChart(); renderPRs(); renderXP(); renderRank(); _renderApiKeyStatus(); }
+  if (id === 'profil') { fillSelects(); renderRecords(); renderChart(); renderPRs(); renderXP(); renderRank(); _renderApiKeyStatus(); _updateRoadmapBadge(); }
 }
 
 // ── Sélecteur visuel de programme (bottom sheet)
@@ -2662,6 +2741,19 @@ function renderWU(s, badge) {
 }
 
 // ── EXO: Freeletics-style light bg, image top 55%, big reps/name bottom, C button adjust
+// Retourne les badges objectifs pour un exercice donné
+function getGoalBadges(exoName) {
+  const goals = EXO_TO_GOALS[exoName] || EXO_TO_GOALS[normalizeExoName(exoName)] || [];
+  const userGoals = DB.get('userSpecificGoals', []);
+  if (!userGoals.length) return '';
+  return goals
+    .filter(gid => userGoals.includes(gid))
+    .map(gid => {
+      const g = SPECIFIC_GOALS.find(x => x.id === gid);
+      return g ? '<span style="display:inline-block;font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border-radius:2px;background:rgba(232,25,44,0.12);color:var(--accent);border:1px solid rgba(232,25,44,0.3);margin-right:4px">' + g.icon + ' ' + g.label + '</span>' : '';
+    }).join('');
+}
+
 function renderExo(s, badge) {
   const e = s.e;
   const src = IMGS[e.n] || '';
@@ -2692,7 +2784,7 @@ function renderExo(s, badge) {
       <!-- TOP BAR — quit + C button -->
       <div style="position:absolute;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:calc(var(--st)+14px) 20px 14px">
         <button id="btn-quit" style="width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
-        <button id="btn-adjust" style="width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,0.6);border:1px solid var(--g1);color:var(--w);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;letter-spacing:0">C</button>
+        <button id="btn-adjust" style="width:44px;height:44px;border-radius:50%;background:rgba(232,25,44,0.15);border:2px solid var(--accent);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;letter-spacing:0.06em;text-transform:uppercase;box-shadow:0 0 10px rgba(232,25,44,0.3)">kg</button>
       </div>
 
       <!-- IMAGE — 55vh -->
@@ -2833,6 +2925,36 @@ function renderExo(s, badge) {
 }
 
 // ── REST: plein écran centré, tap pour passer, swipe back
+
+// ── ANIMATION TOILE DE TRANSITION
+function playWebTransition(cb, duration = 600) {
+  const el = document.getElementById('web-transition');
+  if (!el) { cb(); return; }
+  el.style.display = 'block';
+  el.style.animation = '';
+  const lines = el.querySelectorAll('.wl');
+  lines.forEach((l, i) => {
+    l.style.animation = 'none';
+    l.style.strokeDashoffset = '1000';
+    l.style.opacity = '0';
+    setTimeout(() => {
+      l.style.transition = 'stroke-dashoffset 0.4s ease ' + (i * 0.04) + 's, opacity 0.3s ease ' + (i * 0.04) + 's';
+      l.style.strokeDashoffset = '0';
+      l.style.opacity = '1';
+    }, 20);
+  });
+  setTimeout(() => {
+    cb();
+    el.style.transition = 'opacity 0.25s ease';
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.style.display = 'none';
+      el.style.opacity = '1';
+      lines.forEach(l => { l.style.strokeDashoffset = '1000'; l.style.opacity = '0'; l.style.transition = ''; });
+    }, 260);
+  }, duration);
+}
+
 function renderRest(s, badge) {
   document.getElementById('sess-body').innerHTML = `
     <div id="rest-screen" style="position:relative;width:100%;height:100dvh;background:var(--black);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer">
@@ -2963,6 +3085,11 @@ function renderFeedback(s, badge) {
 function renderDone() {
   Timer.stop();
   if (!SESS) return;
+  // Animation toile sur l'écran de fin
+  playWebTransition(() => _renderDoneContent(), 600);
+}
+
+function _renderDoneContent() {
   const dur = Math.max(0, Math.round((Date.now() - SESS.t0) / 60000));
   const logged = SESS.logged || [];
   const totalSets = logged.length;
@@ -3096,11 +3223,20 @@ let _nextStepLock = false;
 function nextStep() {
   if (_nextStepLock) return;
   _nextStepLock = true;
-  setTimeout(() => { _nextStepLock = false; }, 400);
+  setTimeout(() => { _nextStepLock = false; }, 600);
   Timer.stop();
   if (!SESS) return;
+  const curKind = SESS.steps[SESS.idx]?.kind;
   SESS.idx = Math.min(SESS.idx + 1, SESS.steps.length - 1);
-  renderStep();
+  const nextKind = SESS.steps[SESS.idx]?.kind;
+  const isEnd = SESS.idx >= SESS.steps.length - 1 && nextKind !== 'exo' && nextKind !== 'rest';
+  const needsAnim = (curKind === 'rest' && nextKind === 'exo') ||
+                    (curKind === 'exo'  && nextKind === 'rest') || isEnd;
+  if (needsAnim) {
+    playWebTransition(() => renderStep(), 480);
+  } else {
+    renderStep();
+  }
 }
 
 function endSess() {
@@ -3931,6 +4067,171 @@ function _pbCalcDuration(exos) {
 
 // Formule Epley inverse : poids pour un % du 1RM à N reps
 // 1RM = w * (1 + r/30) → w = 1RM / (1 + r/30)
+// Poids de départ par défaut si aucun 1RM ni historique
+const EXO_DEFAULT_WEIGHT = {
+  'Deadlift':60,'Romanian deadlift':50,'Barbell squat':60,'Goblet squat':20,
+  'Barbell bench press':60,'Dumbbell bench press':20,'Incline dumbbell press':16,
+  'Overhead press':30,'Dumbbell shoulder press':12,'Machine shoulder press':40,
+  'Lat pulldown':50,'Seated cable row':45,'Barbell row':50,'Dumbbell row':18,
+  'Chin-ups':0,'Pull-ups':0,'Lateral raises':8,'Cable lateral raises':8,
+  'Rear delt fly':8,'Cable face pulls':20,'Hip thrust':60,
+  'Leg press':80,'Leg extension':40,'Leg curl':35,
+  'Dumbbell lunges':16,'Dumbbell biceps curl':10,'Hammer curl':10,
+  'Triceps pushdown':25,'Skull crusher':20,'Cable fly':12,'Dumbbell fly':10,
+  'Dips':0,'Assisted dips':30,'Renegade rows':12,'Kettlebell swings':16,
+};
+
+// ══════════════════════════════════════════════════════════════════════
+// ESTIMATION INTER-EXERCICES
+// Si pas de 1RM ni d'historique pour un exo, on estime depuis un exo
+// connu du même groupe musculaire via des ratios biomécanique établis.
+// Structure : { source: exoName, ratio: float, note: string }
+// ratio = poids_cible / poids_source (ex: incliné = 85% du flat bench)
+// ══════════════════════════════════════════════════════════════════════
+const EXO_TRANSFER = {
+  // PECTORAUX — base: Barbell bench press ou Dumbbell bench press
+  'Incline dumbbell press':       [{ src:'Barbell bench press',    r:0.55, note:'Incliné = ~55% bench barre' },
+                                   { src:'Dumbbell bench press',   r:0.85, note:'Incliné = ~85% flat DB' }],
+  'Dumbbell bench press':         [{ src:'Barbell bench press',    r:0.65, note:'DB = ~65% barre (par main)' }],
+  'Cable fly':                    [{ src:'Dumbbell bench press',   r:0.40, note:'Câble écarté = ~40% DB bench' },
+                                   { src:'Barbell bench press',    r:0.25, note:'Câble = ~25% bench barre' }],
+  'Dumbbell fly':                 [{ src:'Dumbbell bench press',   r:0.45, note:'Écarté = ~45% DB bench' }],
+  'Push-ups':                     [{ src:'Barbell bench press',    r:0.00, note:'Poids de corps' }],
+  'Dips':                         [{ src:'Barbell bench press',    r:0.00, note:'Poids de corps' }],
+  'Assisted dips':                [{ src:'Barbell bench press',    r:0.30, note:'Assistance machine' }],
+
+  // ÉPAULES — base: Overhead press ou Dumbbell shoulder press
+  'Dumbbell shoulder press':      [{ src:'Overhead press',         r:0.42, note:'DB OHP = ~42% barre (par main)' },
+                                   { src:'Barbell bench press',    r:0.30, note:'DB OHP ≈ 30% bench' }],
+  'Overhead press':               [{ src:'Barbell bench press',    r:0.65, note:'OHP = ~65% bench barre' }],
+  'Lateral raises':               [{ src:'Dumbbell shoulder press',r:0.35, note:'Élévations = ~35% DB OHP' },
+                                   { src:'Overhead press',         r:0.15, note:'Élévations = ~15% barre OHP' }],
+  'Cable lateral raises':         [{ src:'Lateral raises',         r:0.90, note:'Câble ≈ haltère' }],
+  'Rear delt fly':                [{ src:'Lateral raises',         r:0.80, note:'Oiseau = ~80% élévations lat.' }],
+  'Cable face pulls':             [{ src:'Lateral raises',         r:1.20, note:'Face pulls = ~120% élévations' }],
+  'Machine shoulder press':       [{ src:'Dumbbell shoulder press',r:1.40, note:'Machine > haltères (~x1.4)' }],
+
+  // DOS — base: Lat pulldown ou Seated cable row
+  'Pull-ups':                     [{ src:'Lat pulldown',           r:0.00, note:'Poids de corps' }],
+  'Chin-ups':                     [{ src:'Lat pulldown',           r:0.00, note:'Poids de corps (supination)' }],
+  'Dumbbell row':                 [{ src:'Seated cable row',       r:0.80, note:'Rowing DB = ~80% câble assis' },
+                                   { src:'Lat pulldown',           r:0.85, note:'Rowing DB = ~85% tirage' }],
+  'Barbell row':                  [{ src:'Deadlift',               r:0.65, note:'Rowing = ~65% deadlift' },
+                                   { src:'Lat pulldown',           r:1.60, note:'Rowing barre = ~160% tirage' }],
+  'Renegade rows':                [{ src:'Dumbbell row',           r:0.55, note:'Renegade = ~55% rowing DB' }],
+
+  // JAMBES — base: Barbell squat ou Leg press
+  'Goblet squat':                 [{ src:'Barbell squat',          r:0.30, note:'Goblet = ~30% squat barre' },
+                                   { src:'Leg press',              r:0.20, note:'Goblet = ~20% presse' }],
+  'Dumbbell lunges':              [{ src:'Barbell squat',          r:0.25, note:'Fentes = ~25% squat (par main)' },
+                                   { src:'Leg press',              r:0.15, note:'Fentes = ~15% presse (par main)' }],
+  'Romanian deadlift':            [{ src:'Deadlift',               r:0.80, note:'RDL = ~80% deadlift' },
+                                   { src:'Barbell squat',          r:0.85, note:'RDL = ~85% squat' }],
+  'Leg extension':                [{ src:'Leg press',              r:0.30, note:'Extension = ~30% presse' }],
+  'Leg curl':                     [{ src:'Romanian deadlift',      r:0.45, note:'Curl = ~45% RDL' },
+                                   { src:'Leg press',              r:0.25, note:'Curl = ~25% presse' }],
+  'Hip thrust':                   [{ src:'Barbell squat',          r:1.20, note:'Hip thrust > squat (~120%)' },
+                                   { src:'Deadlift',               r:0.90, note:'Hip thrust = ~90% deadlift' }],
+  'Jump squats':                  [{ src:'Barbell squat',          r:0.00, note:'Poids de corps ou léger' }],
+
+  // BICEPS — base: Dumbbell biceps curl
+  'Hammer curl':                  [{ src:'Dumbbell biceps curl',   r:0.95, note:'Marteau ≈ curl classique' }],
+  'Barbell curl':                 [{ src:'Dumbbell biceps curl',   r:1.30, note:'Barre = ~130% DB (total)' }],
+
+  // TRICEPS — base: Triceps pushdown
+  'Skull crusher':                [{ src:'Triceps pushdown',       r:0.70, note:'Skull = ~70% pushdown' },
+                                   { src:'Barbell bench press',    r:0.30, note:'Skull ≈ 30% bench' }],
+  'Overhead triceps':             [{ src:'Triceps pushdown',       r:0.75, note:'Extension OH = ~75% pushdown' }],
+  'Close grip bench press':       [{ src:'Barbell bench press',    r:0.80, note:'Serré = ~80% bench normal' }],
+
+  // CORE
+  'Ab wheel rollout':             [{ src:null, r:0, note:'Poids de corps' }],
+  'Planche':                      [{ src:null, r:0, note:'Poids de corps' }],
+  'Plank':                        [{ src:null, r:0, note:'Poids de corps' }],
+  'Hollow body hold':             [{ src:null, r:0, note:'Poids de corps' }],
+};
+
+// Estime le poids d'un exercice depuis les données connues (1RM + historique)
+// Mapping groupe musculaire → exo source de référence pour nouveaux exercices
+const MUSCLE_TO_REFERENCE = {
+  'pec': 'Dumbbell bench press', 'chest': 'Dumbbell bench press', 'pectoraux': 'Dumbbell bench press',
+  'shoulder': 'Dumbbell shoulder press', 'épaule': 'Dumbbell shoulder press', 'delt': 'Dumbbell shoulder press',
+  'back': 'Lat pulldown', 'dos': 'Lat pulldown', 'lat': 'Lat pulldown',
+  'bicep': 'Dumbbell biceps curl', 'curl': 'Dumbbell biceps curl',
+  'tricep': 'Triceps pushdown', 'triceps': 'Triceps pushdown',
+  'quad': 'Goblet squat', 'squat': 'Goblet squat', 'legs': 'Goblet squat', 'jambe': 'Goblet squat',
+  'hamstring': 'Romanian deadlift', 'ischio': 'Romanian deadlift', 'glute': 'Hip thrust', 'fessier': 'Hip thrust',
+  'core': null, 'abs': null, 'abdos': null,
+};
+
+// Ratio approximatif pour un exercice inconnu sur un même groupe musculaire
+const UNKNOWN_EXO_RATIO = 0.70; // valeur conservatrice
+
+function estimateWeightFromTransfer(exoName) {
+  // 1. Table exacte
+  let transfers = EXO_TRANSFER[exoName] || EXO_TRANSFER[normalizeExoName(exoName)];
+
+  // 2. Si pas de table exacte : chercher par mots-clés dans le nom de l'exercice
+  if (!transfers) {
+    const lower = exoName.toLowerCase();
+    for (const [keyword, refExo] of Object.entries(MUSCLE_TO_REFERENCE)) {
+      if (lower.includes(keyword) && refExo) {
+        transfers = [{ src: refExo, r: UNKNOWN_EXO_RATIO, note: 'Estimé depuis ' + refExo + ' (même groupe)' }];
+        break;
+      }
+    }
+  }
+  if (!transfers) return null;
+
+  const rms = DB.get('rms', {});
+  const sessions = DB.get('sessions', []);
+
+  // Seuil de fraîcheur : historique de moins de 8 semaines considéré récent
+  const cutoff = Date.now() - 56 * 24 * 3600 * 1000;
+
+  for (const t of transfers) {
+    if (!t.src || t.r === 0) return null; // poids de corps
+
+    // Chercher le 1RM source
+    const srcRM = rms[t.src];
+    if (srcRM?.length) {
+      const recentRM = srcRM.filter(r => new Date(r.date).getTime() > cutoff);
+      const useRM = recentRM.length ? recentRM : srcRM;
+      const best = Math.max(...useRM.map(r => r.v));
+      const estimated = Math.round((best * t.r) / 2.5) * 2.5;
+      return { weight: estimated, source: t.src, note: t.note };
+    }
+
+    // Chercher dans l'historique des séances
+    const srcSets = sessions
+      .flatMap(s => (s.sets||[]).filter(x => x.exo === t.src && x.w > 0))
+      .filter(x => new Date(x.date || 0).getTime() > cutoff || true) // utiliser tout l'historique
+      .slice(-8);
+    if (srcSets.length) {
+      const avg = srcSets.reduce((a, b) => a + (b.w||0), 0) / srcSets.length;
+      const estimated = Math.round((avg * t.r) / 2.5) * 2.5;
+      return { weight: estimated, source: t.src, note: t.note };
+    }
+  }
+  return null;
+}
+
+function getDefaultWeight(exoName) {
+  // 1. Essayer l'estimation inter-exercices
+  const transfer = estimateWeightFromTransfer(exoName);
+  if (transfer?.weight > 0) return transfer.weight;
+  // 2. Fallback sur la table statique
+  return EXO_DEFAULT_WEIGHT[exoName] ?? EXO_DEFAULT_WEIGHT[normalizeExoName(exoName)] ?? null;
+}
+
+// Version enrichie avec métadonnée pour affichage
+function getDefaultWeightWithSource(exoName) {
+  const transfer = estimateWeightFromTransfer(exoName);
+  if (transfer?.weight > 0) return transfer;
+  const w = EXO_DEFAULT_WEIGHT[exoName] ?? EXO_DEFAULT_WEIGHT[normalizeExoName(exoName)] ?? null;
+  return w ? { weight: w, source: null, note: 'Poids de départ suggéré' } : null;
+}
+
 function _pbWeightFromPct(exoName, pct, reps) {
   const rms = DB.get('rms', {});
   if (!rms[exoName]?.length) return null;
@@ -4058,10 +4359,17 @@ function _pbAIPrescribe(exoName, objective, weekIdx, allExos = []) {
     prescribedWeight = Math.round((_pbWeightFromPct(exoName, effectivePct, targetReps) + progression) / 2.5) * 2.5;
   } else if (avgWeight) {
     prescribedWeight = Math.round((avgWeight * (effectivePct / 70) + progression) / 2.5) * 2.5;
+  } else {
+    // Estimation depuis un exercice connu du même groupe musculaire
+    const estimated = getDefaultWeightWithSource(exoName);
+    if (estimated?.weight > 0) {
+      prescribedWeight = estimated.weight;
+    }
   }
 
-  // Note de fatigue pour affichage
+  // Note de fatigue + source pour affichage badge
   const fatigueNote = fatigueFactor < 0.95 ? Math.round((1 - fatigueFactor) * 100) + '% réduit (fatigue)' : null;
+  const weightSource = (!rm1 && !avgWeight) ? getDefaultWeightWithSource(exoName) : null;
 
   // Générer les sets avec variation pyramidale légère pour force, constante pour hypertrophie
   const isStrength = p.pct >= 80;
@@ -4091,6 +4399,8 @@ function _pbAIPrescribe(exoName, objective, weekIdx, allExos = []) {
     prescribedWeight,
     intent: p.intent,
     fatigueNote,
+    weightSource: weightSource?.source || null,
+    weightNote: weightSource?.note || null,
     aiGenerated: true,
     mode: 'ai',
   };
@@ -4288,11 +4598,17 @@ function _pbDayEditor(card, day, di) {
       const exoName = _pbEl('span', { style:'font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.04em;color:var(--w);flex:1' }, exo.n);
       exoTop.appendChild(exoName);
 
-      // Badge IA + note de fatigue si prescrit
+      // Badge IA + note de fatigue + source du poids si prescrit
       if (exo.aiGenerated) {
-        const aiLabel = exo.fatigueNote ? '✦ IA · ' + exo.fatigueNote : '✦ IA';
+        let aiLabel = '✦ IA';
+        if (exo.fatigueNote) aiLabel += ' · ' + exo.fatigueNote;
         const aiBadge = _pbEl('span', { style:'font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border-radius:2px;background:rgba(232,25,44,0.1);color:var(--accent);border:1px solid rgba(232,25,44,0.3)' }, aiLabel);
         exoTop.appendChild(aiBadge);
+        // Source du poids estimé
+        if (exo.weightSource) {
+          const srcBadge = _pbEl('span', { style:'font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:2px 7px;border-radius:2px;background:rgba(239,159,39,0.1);color:var(--amber);border:1px solid rgba(239,159,39,0.3)' }, '≈ ' + exo.weightSource);
+          exoTop.appendChild(srcBadge);
+        }
       }
 
       // Bouton IA individuel
@@ -4971,6 +5287,120 @@ function _pbSaveOnly() {
 // ══════════════════════════════════════════════════════════════════════
 let COACH = null;
 
+// ══════════════════════════════════════════════════════════════════════
+// OBJECTIFS SPÉCIFIQUES — catalogue avec exercices prérequis et roadmap
+// ══════════════════════════════════════════════════════════════════════
+const SPECIFIC_GOALS = [
+  {
+    id: 'first_pullup', icon: '🔝', label: 'Ma première traction',
+    sub: 'Pull-up complet, menton au-dessus de la barre',
+    category: 'force',
+    prereqs: ['Lat pulldown', 'Seated cable row', 'Chin-ups', 'Dumbbell row'],
+    roadmap: [
+      { milestone: 'Lat pulldown 60% poids corps', weeks: '1-3', exos: ['Lat pulldown', 'Seated cable row'] },
+      { milestone: 'Traction assistée (50% de ton poids)', weeks: '4-6', exos: ['Assisted dips', 'Lat pulldown'] },
+      { milestone: 'Traction excentrique (3×5 sec descente)', weeks: '7-9', exos: ['Chin-ups', 'Pull-ups'] },
+      { milestone: 'Première traction complète 🎉', weeks: '10-12', exos: ['Pull-ups'] },
+    ]
+  },
+  {
+    id: 'handstand', icon: '🤸', label: 'Tenir un handstand',
+    sub: 'Équilibre sur les mains, 10 secondes au mur',
+    category: 'mobilité',
+    prereqs: ['Push-ups', 'Overhead press', 'Planche', 'Ab wheel rollout'],
+    roadmap: [
+      { milestone: 'Gainage solide (planche 60s)', weeks: '1-2', exos: ['Planche', 'Hollow body hold'] },
+      { milestone: 'Pompes pike + épaules solides', weeks: '3-5', exos: ['Push-ups', 'Dumbbell shoulder press'] },
+      { milestone: 'Handstand au mur (kick up)', weeks: '6-8', exos: ['Push-ups', 'Overhead press'] },
+      { milestone: 'Tenu 10s sans assistance 🎉', weeks: '9-12', exos: ['Planche'] },
+    ]
+  },
+  {
+    id: 'run_1h', icon: '🏃', label: 'Courir 1h sans fatigue',
+    sub: 'Endurance aérobique, rythme confortable',
+    category: 'cardio',
+    prereqs: [],
+    roadmap: [
+      { milestone: 'Courir 15 min sans pause', weeks: '1-3', exos: [] },
+      { milestone: 'Courir 30 min en Zone 2', weeks: '4-6', exos: [] },
+      { milestone: 'Courir 45 min régulier', weeks: '7-9', exos: [] },
+      { milestone: 'Courir 1h confortablement 🎉', weeks: '10-16', exos: [] },
+    ]
+  },
+  {
+    id: 'bench_bodyweight', icon: '🏋️', label: 'Soulever mon poids de corps au bench',
+    sub: 'Développé couché × poids corporel',
+    category: 'force',
+    prereqs: ['Barbell bench press', 'Dumbbell bench press', 'Incline dumbbell press'],
+    roadmap: [
+      { milestone: '60% du poids corps × 5', weeks: '1-4', exos: ['Dumbbell bench press'] },
+      { milestone: '80% du poids corps × 3', weeks: '5-8', exos: ['Barbell bench press'] },
+      { milestone: '100% du poids corps × 1 🎉', weeks: '9-16', exos: ['Barbell bench press'] },
+    ]
+  },
+  {
+    id: 'muscle_up', icon: '💥', label: 'Muscle-up',
+    sub: 'Traction explosive + transition au-dessus de la barre',
+    category: 'force',
+    prereqs: ['Pull-ups', 'Chin-ups', 'Dips', 'Lat pulldown'],
+    roadmap: [
+      { milestone: '10 tractions strictes', weeks: '1-6', exos: ['Pull-ups', 'Lat pulldown'] },
+      { milestone: '10 dips strictes', weeks: '3-8', exos: ['Dips', 'Triceps pushdown'] },
+      { milestone: 'Traction explosive (chest-to-bar)', weeks: '7-10', exos: ['Pull-ups'] },
+      { milestone: 'Premier muscle-up 🎉', weeks: '10-16', exos: ['Pull-ups', 'Dips'] },
+    ]
+  },
+  {
+    id: 'squat_bodyweight', icon: '🦵', label: 'Squat 1.5× mon poids de corps',
+    sub: 'Force des jambes, barre olympique',
+    category: 'force',
+    prereqs: ['Barbell squat', 'Goblet squat', 'Leg press', 'Romanian deadlift'],
+    roadmap: [
+      { milestone: 'Squat × poids corps × 5', weeks: '1-6', exos: ['Goblet squat', 'Leg press'] },
+      { milestone: 'Squat 1.2× poids corps × 3', weeks: '7-12', exos: ['Barbell squat'] },
+      { milestone: 'Squat 1.5× poids corps × 1 🎉', weeks: '12-20', exos: ['Barbell squat'] },
+    ]
+  },
+  {
+    id: 'lose_weight', icon: '🔥', label: 'Perdre 5kg de graisse',
+    sub: 'Rééquilibrage composition corporelle',
+    category: 'perte de poids',
+    prereqs: [],
+    roadmap: [
+      { milestone: '-1 à -2kg (eau et glycogène)', weeks: '1-2', exos: [] },
+      { milestone: '-3kg (graisse réelle)', weeks: '3-8', exos: [] },
+      { milestone: '-5kg objectif atteint 🎉', weeks: '8-16', exos: [] },
+    ]
+  },
+  {
+    id: 'l_sit', icon: '🤼', label: 'L-sit (tenir 10 secondes)',
+    sub: 'Force core + compression, jambes tendues suspendues',
+    category: 'mobilité',
+    prereqs: ['Dip bar leg raises', 'Ab wheel rollout', 'Planche'],
+    roadmap: [
+      { milestone: 'Relevés de jambes au sol 3×15', weeks: '1-3', exos: ['Dip bar leg raises'] },
+      { milestone: 'L-sit partiel (1 jambe)', weeks: '4-6', exos: ['Planche'] },
+      { milestone: 'L-sit 5 secondes', weeks: '7-9', exos: ['Dip bar leg raises', 'Planche'] },
+      { milestone: 'L-sit 10 secondes 🎉', weeks: '10-14', exos: ['Planche', 'Hollow body hold'] },
+    ]
+  },
+];
+
+// Mapping exo → objectifs qu'il contribue à atteindre
+const EXO_TO_GOALS = {};
+SPECIFIC_GOALS.forEach(g => {
+  g.prereqs.forEach(exo => {
+    if (!EXO_TO_GOALS[exo]) EXO_TO_GOALS[exo] = [];
+    EXO_TO_GOALS[exo].push(g.id);
+  });
+  g.roadmap.forEach(step => {
+    step.exos.forEach(exo => {
+      if (!EXO_TO_GOALS[exo]) EXO_TO_GOALS[exo] = [];
+      if (!EXO_TO_GOALS[exo].includes(g.id)) EXO_TO_GOALS[exo].push(g.id);
+    });
+  });
+});
+
 const COACH_STEPS = [
   {
     id: 'level',
@@ -5012,6 +5442,14 @@ const COACH_STEPS = [
       { label: 'Être plus fort', sub: 'Force maximale', value: 'force', icon: '🏋️' },
       { label: 'Me sentir mieux', sub: 'Cardio, endurance, mobilité', value: 'endurance', icon: '🧘' },
     ]
+  },
+  {
+    id: 'specific_goals',
+    icon: '🏆',
+    question: 'Des objectifs précis ?',
+    sub: 'Multi-sélection — laisser vide si tu veux juste progresser généralement',
+    type: 'goals',
+    choices: SPECIFIC_GOALS,
   },
   {
     id: 'days',
@@ -5291,6 +5729,62 @@ function _coachRenderStep(overlay) {
   }
 
   // ════════════════════════════════════════
+  // TYPE : goals — multi-select objectifs spécifiques avec skip
+  // ════════════════════════════════════════
+  else if (step.type === 'goals') {
+    if (!COACH.answers._goalsSet) COACH.answers._goalsSet = new Set();
+    const gsel = COACH.answers._goalsSet;
+
+    const gcol = document.createElement('div');
+    gcol.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:16px';
+
+    step.choices.forEach(goal => {
+      const isSel = gsel.has(goal.id);
+      const row = document.createElement('button');
+      row.style.cssText = 'width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;border:2px solid ' + (isSel ? 'var(--accent)' : 'var(--g1)') + ';background:' + (isSel ? 'rgba(232,25,44,0.08)' : 'var(--black3)') + ';cursor:pointer;text-align:left;transition:all 0.15s';
+
+      const checkBox = document.createElement('div');
+      checkBox.style.cssText = 'width:22px;height:22px;border-radius:5px;border:2px solid ' + (isSel ? 'var(--accent)' : 'var(--g1)') + ';background:' + (isSel ? 'var(--accent)' : 'transparent') + ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;transition:all 0.15s';
+      if (isSel) checkBox.textContent = '✓';
+
+      const iconEl3 = document.createElement('div');
+      iconEl3.style.cssText = 'font-size:22px;flex-shrink:0';
+      iconEl3.textContent = goal.icon;
+
+      const textDiv = document.createElement('div');
+      textDiv.style.flex = '1';
+      textDiv.innerHTML = '<div style="font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700;color:' + (isSel ? 'var(--accent)' : 'var(--w)') + '">' + goal.label + '</div><div style="font-size:11px;color:var(--wm)">' + goal.sub + '</div>';
+
+      // Badge catégorie
+      const catBadge = document.createElement('div');
+      catBadge.style.cssText = 'font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:2px 6px;border-radius:2px;background:rgba(255,255,255,0.06);color:var(--wm);flex-shrink:0';
+      catBadge.textContent = goal.category;
+
+      row.appendChild(checkBox); row.appendChild(iconEl3); row.appendChild(textDiv); row.appendChild(catBadge);
+      row.addEventListener('click', () => {
+        gsel.has(goal.id) ? gsel.delete(goal.id) : gsel.add(goal.id);
+        COACH.answers._goalsSet = gsel;
+        _coachRenderStep(overlay);
+      });
+      gcol.appendChild(row);
+    });
+    body.appendChild(gcol);
+
+    // Boutons Continuer / Passer
+    const gBtns = document.createElement('div');
+    gBtns.style.cssText = 'display:flex;flex-direction:column;gap:8px';
+    const gCont = document.createElement('button');
+    gCont.style.cssText = 'width:100%;font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;box-shadow:0 0 16px var(--theme-glow)';
+    gCont.textContent = gsel.size > 0 ? 'Continuer (' + gsel.size + ' objectif' + (gsel.size > 1 ? 's' : '') + ')' : 'Passer →';
+    gCont.onclick = () => {
+      COACH.answers.specific_goals = [...gsel];
+      _next();
+    };
+    gBtns.appendChild(gCont);
+    body.appendChild(gBtns);
+  }
+
+  // ════════════════════════════════════════
   // TYPE : multiselect — cases + champ texte libre
   // ════════════════════════════════════════
   else if (step.type === 'multiselect') {
@@ -5552,7 +6046,52 @@ function _coachShowResult(overlay, prog) {
   overlay.appendChild(header);
 
   const body = document.createElement('div');
-  body.style.cssText = 'flex:1;overflow-y:auto;padding:20px';
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:0';
+
+  // ── Onglets de navigation
+  const constraints = COACH.answers?.constraint && COACH.answers.constraint !== 'aucune';
+  const hasGoals = COACH.answers?.specific_goals?.length > 0;
+  const tabs = [{ id:'prog', label:'Programme' }];
+  if (constraints) tabs.push({ id:'adapt', label:'Adaptations 🛡️' });
+  if (hasGoals)    tabs.push({ id:'roadmap', label:'Roadmap 🏆' });
+
+  let activeTab = 'prog';
+  const tabBar = document.createElement('div');
+  tabBar.style.cssText = 'display:flex;border-bottom:1px solid var(--g1);background:var(--black2);flex-shrink:0';
+  tabs.forEach(t => {
+    const tb = document.createElement('button');
+    tb.style.cssText = 'flex:1;padding:12px 6px;font-family:Barlow Condensed,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;border:none;background:transparent;color:' + (t.id==='prog'?'var(--accent)':'var(--wm)') + ';cursor:pointer;border-bottom:2px solid ' + (t.id==='prog'?'var(--accent)':'transparent');
+    tb.textContent = t.label;
+    tb.dataset.tab = t.id;
+    tb.onclick = () => {
+      activeTab = t.id;
+      tabBar.querySelectorAll('button').forEach(b => {
+        const active = b.dataset.tab === t.id;
+        b.style.color = active ? 'var(--accent)' : 'var(--wm)';
+        b.style.borderBottom = active ? '2px solid var(--accent)' : '2px solid transparent';
+      });
+      tabContents.forEach(tc => { tc.style.display = tc.dataset.tab === t.id ? 'block' : 'none'; });
+    };
+    tabBar.appendChild(tb);
+  });
+  body.appendChild(tabBar);
+
+  const tabContents = [];
+  function makeTabContent(id) {
+    const tc = document.createElement('div');
+    tc.dataset.tab = id;
+    tc.style.cssText = 'padding:20px;' + (id === 'prog' ? '' : 'display:none');
+    tabContents.push(tc);
+    body.appendChild(tc);
+    return tc;
+  }
+  const progTab = makeTabContent('prog');
+  const adaptTab = constraints ? makeTabContent('adapt') : null;
+  const roadmapTab = hasGoals ? makeTabContent('roadmap') : null;
+
+  // ── Contenu onglet Programme (stats + jours)
+  {
+    const inner = progTab;
 
   // Stats
   const statsRow = document.createElement('div');
@@ -5563,13 +6102,13 @@ function _coachShowResult(overlay, prog) {
     card.innerHTML = '<div style="font-family:Bebas Neue,sans-serif;font-size:32px;color:var(--accent);line-height:1">' + v + '</div><div style="font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--wm)">' + l + '</div>';
     statsRow.appendChild(card);
   });
-  body.appendChild(statsRow);
+  inner.appendChild(statsRow);
 
   // Aperçu des jours
   const daysLabel = document.createElement('div');
   daysLabel.style.cssText = 'font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--wm);margin-bottom:10px';
   daysLabel.textContent = 'Structure de la semaine';
-  body.appendChild(daysLabel);
+  inner.appendChild(daysLabel);
 
   const daysWrap = document.createElement('div');
   daysWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:24px';
@@ -5601,9 +6140,136 @@ function _coachShowResult(overlay, prog) {
     row.appendChild(durEl);
     daysWrap.appendChild(row);
   });
-  body.appendChild(daysWrap);
+  inner.appendChild(daysWrap);
+  } // fin progTab
+
+  // ── Onglet Adaptations (si contraintes)
+  if (adaptTab) {
+    const constraint = COACH.answers.constraint;
+    const adaptTitle = document.createElement('div');
+    adaptTitle.style.cssText = 'font-family:Bebas Neue,sans-serif;font-size:22px;color:var(--w);margin-bottom:4px';
+    adaptTitle.textContent = 'Exercices adaptés';
+    const adaptSub = document.createElement('div');
+    adaptSub.style.cssText = 'font-size:12px;color:var(--wm);margin-bottom:16px;line-height:1.5';
+    adaptSub.textContent = 'Ces exercices ont été sélectionnés ou modifiés en tenant compte de : ' + constraint;
+    adaptTab.appendChild(adaptTitle); adaptTab.appendChild(adaptSub);
+
+    // Lister les contraintes et les adaptations
+    const CONSTRAINT_ADAPTATIONS = {
+      'dos': [
+        { original: 'Deadlift', adapted: 'Romanian deadlift (demi-plage)', reason: 'Réduit la compression lombaire', safe: true },
+        { original: 'Barbell squat', adapted: 'Goblet squat ou Leg press', reason: 'Charge lombaire réduite', safe: true },
+        { original: 'Good mornings', adapted: 'Hip thrust', reason: 'Évite la flexion lombaire sous charge', safe: true },
+      ],
+      'épaules': [
+        { original: 'Overhead press', adapted: 'Développé incliné léger', reason: 'Évite les positions overhead', safe: true },
+        { original: 'Lateral raises', adapted: 'Cable lateral raises basse poulie', reason: 'Moindre contrainte rotatoire', safe: true },
+        { original: 'Behind-the-neck pulldown', adapted: 'Lat pulldown devant', reason: 'Protège la coiffe des rotateurs', safe: true },
+      ],
+      'genoux et hanches': [
+        { original: 'Barbell squat', adapted: 'Leg press + contrôle du genou', reason: 'Réduit le stress patellaire', safe: true },
+        { original: 'Dumbbell lunges', adapted: 'Step-up contrôlé', reason: 'Évite le valgus en fente', safe: true },
+        { original: 'Jump squats', adapted: 'Goblet squat lent', reason: "Élimine l'impact articulaire", safe: true },
+      ],
+      'cervicales': [
+        { original: 'Overhead press', adapted: 'Développé épaules machine', reason: 'Pas de charge cervicale directe', safe: true },
+        { original: 'Behind-the-neck exercises', adapted: 'Toutes variantes devant', reason: 'Protège les cervicales', safe: true },
+      ],
+      'cheville': [
+        { original: 'Jump squats', adapted: 'Squat lent au sol', reason: "Élimine l'impact", safe: true },
+        { original: 'Running', adapted: 'Vélo elliptique ou natation', reason: 'Cardio sans impact', safe: true },
+      ],
+    };
+
+    const constraintParts = constraint.split(', ');
+    let hasAdapt = false;
+    constraintParts.forEach(part => {
+      const adaptList = Object.entries(CONSTRAINT_ADAPTATIONS).find(([k]) => part.toLowerCase().includes(k));
+      if (adaptList) {
+        hasAdapt = true;
+        const [zone, adaptations] = adaptList;
+        const zoneHeader = document.createElement('div');
+        zoneHeader.style.cssText = 'font-family:Barlow Condensed,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;margin-top:8px';
+        zoneHeader.textContent = zone.toUpperCase();
+        adaptTab.appendChild(zoneHeader);
+        adaptations.forEach(a => {
+          const card = document.createElement('div');
+          card.style.cssText = 'background:var(--black3);border:1px solid var(--g1);border-radius:6px;padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--green)';
+          card.innerHTML =
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+            '<span style="font-family:Barlow Condensed,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--wm);text-decoration:line-through">' + a.original + '</span>' +
+            '<span style="color:var(--wm)">→</span>' +
+            '<span style="font-family:Barlow Condensed,sans-serif;font-size:12px;font-weight:700;color:var(--green)">' + a.adapted + '</span>' +
+            '</div>' +
+            '<div style="font-size:11px;color:var(--wm)">' + a.reason + '</div>';
+          adaptTab.appendChild(card);
+        });
+      }
+    });
+
+    // Si contrainte custom non reconnue
+    if (!hasAdapt || constraintParts.some(p => !Object.keys(CONSTRAINT_ADAPTATIONS).some(k => p.toLowerCase().includes(k)))) {
+      const freeCard = document.createElement('div');
+      freeCard.style.cssText = 'background:rgba(239,159,39,0.08);border:1px solid rgba(239,159,39,0.3);border-radius:6px;padding:12px;margin-top:8px';
+      freeCard.innerHTML = '<div style="font-family:Barlow Condensed,sans-serif;font-size:11px;font-weight:700;color:var(--amber);margin-bottom:4px">Contrainte signalée</div><div style="font-size:12px;color:var(--wd)">' + constraint + '</div><div style="font-size:11px;color:var(--wm);margin-top:6px">Pris en compte par le coach. Reste a l\'ecoute de tes sensations.</div>';
+      adaptTab.appendChild(freeCard);
+    }
+  }
+
+  // ── Onglet Roadmap (si objectifs spécifiques)
+  if (roadmapTab) {
+    const goalIds = COACH.answers.specific_goals || [];
+    const roadTitle = document.createElement('div');
+    roadTitle.style.cssText = 'font-family:Bebas Neue,sans-serif;font-size:22px;color:var(--w);margin-bottom:4px';
+    roadTitle.textContent = 'Ta Roadmap';
+    const roadSub = document.createElement('div');
+    roadSub.style.cssText = 'font-size:12px;color:var(--wm);margin-bottom:20px;line-height:1.5';
+    roadSub.textContent = "Étapes progressives pour atteindre tes objectifs — le programme est construit pour t'y mener.";
+    roadmapTab.appendChild(roadTitle); roadmapTab.appendChild(roadSub);
+
+    goalIds.forEach(gid => {
+      const goal = SPECIFIC_GOALS.find(g => g.id === gid);
+      if (!goal) return;
+
+      const goalCard = document.createElement('div');
+      goalCard.style.cssText = 'margin-bottom:24px';
+
+      const goalHeader = document.createElement('div');
+      goalHeader.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:12px';
+      goalHeader.innerHTML = '<div style="font-size:28px">' + goal.icon + '</div><div><div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--w);line-height:1">' + goal.label + '</div><div style="font-size:11px;color:var(--wm)">' + goal.sub + '</div></div>';
+      goalCard.appendChild(goalHeader);
+
+      goal.roadmap.forEach((step, si) => {
+        const stepEl = document.createElement('div');
+        stepEl.style.cssText = 'display:flex;gap:12px;margin-bottom:10px';
+
+        // Ligne timeline
+        const timeline = document.createElement('div');
+        timeline.style.cssText = 'display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:24px';
+        const dot = document.createElement('div');
+        dot.style.cssText = 'width:10px;height:10px;border-radius:50%;background:' + (si === goal.roadmap.length - 1 ? 'var(--accent)' : 'var(--g1)') + ';flex-shrink:0;margin-top:4px';
+        const line = document.createElement('div');
+        line.style.cssText = 'flex:1;width:1px;background:var(--g1);margin-top:4px;' + (si === goal.roadmap.length - 1 ? 'display:none' : '');
+        timeline.appendChild(dot); timeline.appendChild(line);
+
+        const stepContent = document.createElement('div');
+        stepContent.style.cssText = 'flex:1;padding-bottom:8px';
+        stepContent.innerHTML =
+          '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px">' +
+          '<div style="font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;color:' + (si === goal.roadmap.length - 1 ? 'var(--accent)' : 'var(--w)') + '">' + step.milestone + '</div>' +
+          '<div style="font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;color:var(--wm)">S' + step.weeks + '</div>' +
+          '</div>' +
+          (step.exos.length ? '<div style="font-size:10px;color:var(--wm)">' + step.exos.join(' · ') + '</div>' : '');
+
+        stepEl.appendChild(timeline); stepEl.appendChild(stepContent);
+        goalCard.appendChild(stepEl);
+      });
+      roadmapTab.appendChild(goalCard);
+    });
+  }
 
   // Boutons action
+  { const inner2 = progTab;
   const btnActivate = document.createElement('button');
   btnActivate.style.cssText = 'width:100%;font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:16px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;margin-bottom:8px;box-shadow:0 0 20px var(--theme-glow)';
   btnActivate.textContent = '✓ Enregistrer et activer';
@@ -5622,9 +6288,10 @@ function _coachShowResult(overlay, prog) {
     _coachRenderStep(overlay);
   };
 
-  body.appendChild(btnActivate);
-  body.appendChild(btnSave);
-  body.appendChild(btnRedo);
+  inner2.appendChild(btnActivate);
+  inner2.appendChild(btnSave);
+  inner2.appendChild(btnRedo);
+  }
   overlay.appendChild(body);
 }
 
@@ -5671,7 +6338,12 @@ function _coachSaveProg(prog, activate) {
       l: d.l || 'Lun', n: d.n || 'Repos', b: (d.n||'Off').slice(0,8),
       t: d.t || 'rest', dur: d.dur || '45 min', rest: d.rest || 60,
       foc: d.foc || '', img: '',
-      exos: mainExos.map(e => ({ n: e.n, s: e.s || '3×10', m: e.m || '' })),
+      exos: mainExos.map(e => {
+      const name = normalizeExoName(e.n);
+      // Auto-ajouter à EXS si inconnu
+      if (name && !EXS.includes(name)) EXS.push(name);
+      return { n: name, s: e.s || '3×10', m: e.m || '' };
+    }),
       card: cardText,
       tip: tipText
     };
@@ -5692,6 +6364,13 @@ function _coachSaveProg(prog, activate) {
     duration: prog.duration || 6,
     keywords: prog.keywords || [],
   };
+
+  // Sauvegarder les objectifs spécifiques de l'utilisateur
+  if (COACH?.answers?.specific_goals?.length) {
+    const existingGoals = DB.get('userSpecificGoals', []);
+    const merged = [...new Set([...existingGoals, ...COACH.answers.specific_goals])];
+    DB.set('userSpecificGoals', merged);
+  }
 
   const progs = DB.get('customProgs', []);
   progs.push(finalProg);
@@ -5970,6 +6649,155 @@ function _renderApiKeyStatus() {
   } else {
     el.innerHTML = '<span style="color:var(--amber)">⚠ Aucune clé — les fonctions IA ne fonctionneront pas</span>';
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ROADMAP — overlay depuis le Profil
+// ══════════════════════════════════════════════════════════════════════
+function _updateRoadmapBadge() {
+  const el = document.getElementById('roadmap-badge-count');
+  if (!el) return;
+  const goals = DB.get('userSpecificGoals', []);
+  el.textContent = goals.length > 0
+    ? goals.length + ' objectif' + (goals.length > 1 ? 's' : '') + ' en cours'
+    : 'Aucun objectif défini';
+}
+
+function openRoadmap() {
+  const userGoals = DB.get('userSpecificGoals', []);
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:800;background:var(--black);overflow-y:auto';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'position:sticky;top:0;z-index:10;background:rgba(10,10,10,0.95);backdrop-filter:blur(12px);padding:calc(var(--st)+14px) 20px 14px;border-bottom:1px solid var(--g1);display:flex;align-items:center;gap:12px';
+  const backBtn = document.createElement('button');
+  backBtn.style.cssText = 'width:40px;height:40px;border-radius:50%;background:var(--g1);border:none;color:var(--w);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0';
+  backBtn.textContent = '←';
+  backBtn.onclick = () => overlay.remove();
+  const titleCol = document.createElement('div');
+  titleCol.style.flex = '1';
+  titleCol.innerHTML = '<div style="font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent)">Profil</div><div style="font-family:Bebas Neue,sans-serif;font-size:24px;color:var(--w);line-height:1">Ma Roadmap</div>';
+  header.appendChild(backBtn); header.appendChild(titleCol);
+  overlay.appendChild(header);
+
+  const content = document.createElement('div');
+  content.style.cssText = 'padding:20px';
+
+  if (!userGoals.length) {
+    // Pas encore d'objectifs — afficher tous les objectifs disponibles
+    const emptyMsg = document.createElement('div');
+    emptyMsg.style.cssText = 'text-align:center;padding:40px 20px';
+    emptyMsg.innerHTML = '<div style="font-size:40px;margin-bottom:12px">🏆</div><div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:var(--w);margin-bottom:8px">Aucun objectif défini</div><div style="font-size:13px;color:var(--wm);line-height:1.5;margin-bottom:20px">Utilise le Coach IA pour créer un programme avec des objectifs spécifiques, ou sélectionne tes objectifs ci-dessous.</div>';
+    content.appendChild(emptyMsg);
+
+    // Permettre d'ajouter des objectifs directement
+    const addTitle = document.createElement('div');
+    addTitle.style.cssText = 'font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:12px';
+    addTitle.textContent = 'Choisir des objectifs';
+    content.appendChild(addTitle);
+    _renderGoalPicker(content, overlay);
+  } else {
+    // Afficher la roadmap des objectifs actifs
+    const activeGoals = SPECIFIC_GOALS.filter(g => userGoals.includes(g.id));
+
+    activeGoals.forEach(goal => {
+      const goalSection = document.createElement('div');
+      goalSection.style.cssText = 'margin-bottom:28px';
+
+      const goalHead = document.createElement('div');
+      goalHead.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:14px';
+      const goalInfo = document.createElement('div');
+      goalInfo.style.cssText = 'display:flex;align-items:center;gap:10px';
+      goalInfo.innerHTML = '<div style="font-size:28px">' + goal.icon + '</div><div><div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--w);line-height:1">' + goal.label + '</div><div style="font-size:11px;color:var(--wm)">' + goal.sub + '</div></div>';
+      const removeBtn = document.createElement('button');
+      removeBtn.style.cssText = 'font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 8px;border-radius:3px;border:1px solid var(--g1);background:transparent;color:var(--wm);cursor:pointer';
+      removeBtn.textContent = 'Retirer';
+      removeBtn.onclick = () => {
+        const goals2 = DB.get('userSpecificGoals', []).filter(g => g !== goal.id);
+        DB.set('userSpecificGoals', goals2);
+        _updateRoadmapBadge();
+        overlay.remove(); openRoadmap();
+      };
+      goalHead.appendChild(goalInfo); goalHead.appendChild(removeBtn);
+      goalSection.appendChild(goalHead);
+
+      // Timeline
+      goal.roadmap.forEach((step, si) => {
+        const stepEl = document.createElement('div');
+        stepEl.style.cssText = 'display:flex;gap:14px;margin-bottom:12px';
+
+        const timeline = document.createElement('div');
+        timeline.style.cssText = 'display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:28px;padding-top:2px';
+        const dot = document.createElement('div');
+        const isLast = si === goal.roadmap.length - 1;
+        dot.style.cssText = 'width:12px;height:12px;border-radius:50%;background:' + (isLast ? 'var(--accent)' : 'var(--black2)') + ';border:2px solid ' + (isLast ? 'var(--accent)' : 'var(--g1)') + ';flex-shrink:0;box-shadow:' + (isLast ? '0 0 8px var(--theme-glow)' : 'none');
+        timeline.appendChild(dot);
+        if (!isLast) {
+          const line = document.createElement('div');
+          line.style.cssText = 'flex:1;width:1px;background:var(--g1);margin-top:3px;min-height:20px';
+          timeline.appendChild(line);
+        }
+
+        const stepContent = document.createElement('div');
+        stepContent.style.cssText = 'flex:1;padding-bottom:8px';
+        stepContent.innerHTML =
+          '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">' +
+          '<div style="font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700;color:' + (isLast ? 'var(--accent)' : 'var(--w)') + '">' + step.milestone + '</div>' +
+          '<div style="font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;color:var(--wm);white-space:nowrap">Sem. ' + step.weeks + '</div>' +
+          '</div>' +
+          (step.exos.length ? '<div style="display:flex;flex-wrap:wrap;gap:4px">' +
+            step.exos.map(e => '<span style="font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:2px 6px;border-radius:2px;background:rgba(255,255,255,0.06);color:var(--wm)">' + e + '</span>').join('') +
+            '</div>' : '');
+
+        stepEl.appendChild(timeline); stepEl.appendChild(stepContent);
+        goalSection.appendChild(stepEl);
+      });
+
+      content.appendChild(goalSection);
+
+      // Séparateur
+      if (activeGoals.indexOf(goal) < activeGoals.length - 1) {
+        const sep = document.createElement('div');
+        sep.style.cssText = 'height:1px;background:var(--g1);margin-bottom:28px';
+        content.appendChild(sep);
+      }
+    });
+
+    // Bouton ajouter un objectif
+    const addBtn = document.createElement('button');
+    addBtn.style.cssText = 'width:100%;margin-top:8px;font-family:Barlow Condensed,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px;border-radius:6px;border:1px dashed var(--g1);background:transparent;color:var(--wm);cursor:pointer';
+    addBtn.textContent = '+ Ajouter un objectif';
+    addBtn.onclick = () => {
+      content.innerHTML = '';
+      _renderGoalPicker(content, overlay);
+    };
+    content.appendChild(addBtn);
+  }
+
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+}
+
+function _renderGoalPicker(container, overlay) {
+  const userGoals = DB.get('userSpecificGoals', []);
+  SPECIFIC_GOALS.forEach(goal => {
+    const isSel = userGoals.includes(goal.id);
+    const card = document.createElement('button');
+    card.style.cssText = 'width:100%;display:flex;align-items:center;gap:12px;padding:14px;border-radius:8px;border:2px solid ' + (isSel ? 'var(--accent)' : 'var(--g1)') + ';background:' + (isSel ? 'rgba(232,25,44,0.08)' : 'var(--black3)') + ';cursor:pointer;text-align:left;margin-bottom:8px;transition:all 0.15s';
+    card.innerHTML =
+      '<div style="font-size:22px;flex-shrink:0">' + goal.icon + '</div>' +
+      '<div style="flex:1"><div style="font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700;color:' + (isSel ? 'var(--accent)' : 'var(--w)') + '">' + goal.label + '</div><div style="font-size:11px;color:var(--wm)">' + goal.sub + '</div></div>' +
+      (isSel ? '<div style="width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;flex-shrink:0">✓</div>' : '');
+    card.onclick = () => {
+      const goals2 = DB.get('userSpecificGoals', []);
+      const idx = goals2.indexOf(goal.id);
+      if (idx >= 0) goals2.splice(idx, 1); else goals2.push(goal.id);
+      DB.set('userSpecificGoals', goals2);
+      _updateRoadmapBadge();
+      overlay.remove(); openRoadmap();
+    };
+    container.appendChild(card);
+  });
 }
 </script>
 
